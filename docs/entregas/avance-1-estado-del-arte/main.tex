@@ -1,0 +1,1370 @@
+\documentclass[11pt]{article}
+
+% -------------------------------------------------
+% Idioma y codificación
+% -------------------------------------------------
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish,mexico]{babel}
+
+% -------------------------------------------------
+% Tipografía y composición
+% -------------------------------------------------
+\usepackage{lmodern}
+\usepackage{microtype}
+\usepackage{setspace}
+
+% -------------------------------------------------
+% Márgenes
+% -------------------------------------------------
+\usepackage[
+    top=2.5cm,
+    bottom=2.5cm,
+    left=2.7cm,
+    right=2.7cm
+]{geometry}
+
+% -------------------------------------------------
+% Tablas, figuras y listas
+% -------------------------------------------------
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{graphicx}
+\usepackage{caption}
+\usepackage{enumitem}
+
+% -------------------------------------------------
+% Matemáticas
+% -------------------------------------------------
+\usepackage{amsmath}
+\usepackage{amssymb}
+
+% -------------------------------------------------
+% Referencias
+% -------------------------------------------------
+\usepackage{csquotes}
+\usepackage[
+    backend=biber,
+    style=apa,
+    sorting=nyt
+]{biblatex}
+
+\addbibresource{referencias.bib}
+
+% -------------------------------------------------
+% Hipervínculos
+% -------------------------------------------------
+\usepackage[
+    hidelinks
+]{hyperref}
+
+% -------------------------------------------------
+% Formato general
+% -------------------------------------------------
+\setstretch{1.15}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.6em}
+
+\setlist[itemize]{
+    leftmargin=*,
+    topsep=0.3em,
+    itemsep=0.2em
+}
+
+\setlist[enumerate]{
+    leftmargin=*,
+    topsep=0.3em,
+    itemsep=0.2em
+}
+
+\usepackage{placeins}
+% -------------------------------------------------
+% Documento
+% -------------------------------------------------
+\begin{document}
+
+% -------------------------------------------------
+% Portada
+% -------------------------------------------------
+\begin{titlepage}
+    \centering
+
+    \vspace*{2.0cm}
+
+    {\large\bfseries
+    Avance 1
+    \par}
+
+    \vspace{0.6cm}
+
+    {\LARGE\bfseries
+    \parbox{0.88\textwidth}{
+        \centering
+        Estado del arte y caracterización del problema
+    }
+    \par}
+
+    \vspace{1.2cm}
+
+    {\large
+    \parbox{0.88\textwidth}{
+        \centering
+        Planeación inteligente de rutas ante interrupciones mediante técnicas de optimización e inteligencia artificial
+    }
+    \par}
+
+    \vspace{1.5cm}
+
+    {\large\bfseries
+    Equipo 42 -- Route Intelligence
+    \par}
+
+    \vspace{0.35cm}
+
+    {\normalsize
+    Maestría en Inteligencia Artificial Aplicada
+    \par}
+
+    \vspace{1.5cm}
+
+    {\normalsize
+    Luis Ángel Herrera Flores\\[0.25cm]
+    Francisco Natanael Ortiz Martínez\\[0.25cm]
+    Edgar Iván Rosas Gómez
+    \par}
+
+    \vspace{1.2cm}
+
+    {\normalsize
+    Asesor / Sponsor: Dr. Gerardo Jesús Camacho González
+    \par}
+
+    \vfill
+
+    {\normalsize
+    Octubre de 2026
+    \par}
+
+\end{titlepage}
+
+% -------------------------------------------------
+% Índice
+% -------------------------------------------------
+\tableofcontents
+\newpage
+
+\section{Introducción y objetivo del avance}
+
+El presente avance tiene como propósito consolidar el estado del arte relevante para el estudio de problemas de ruteo de vehículos con ventanas de tiempo sujetos a interrupciones durante la ejecución, así como caracterizar los principales elementos, variables y fuentes de incertidumbre que pueden intervenir en su modelado y recuperación.
+
+Como referencia principal se considera el enfoque desarrollado por Berth y Trigos para la recuperación de rutas ante interrupciones, en el que una solución inicialmente factible puede requerir ser recalculada cuando cambios en las condiciones de operación, particularmente en los tiempos de viaje, comprometen el cumplimiento de las ventanas de tiempo \parencite{berth_trigos_2025,berth_thesis_2025}. A partir de este marco se busca identificar qué componentes se representan mediante parámetros fijos, supuestos determinísticos o mecanismos de simulación, cuáles podrían beneficiarse de técnicas de inteligencia artificial o modelado probabilístico y, particularmente, cuáles podrían estimarse anticipadamente para identificar condiciones que puedan comprometer la factibilidad de las rutas.
+
+La literatura reciente distingue diferentes formas de combinar aprendizaje automático y optimización en problemas de ruteo. Una de ellas consiste en utilizar técnicas de aprendizaje para mejorar la representación del problema o la estimación de sus parámetros; otra se orienta a apoyar directamente los métodos de optimización, tanto en contextos estáticos como dinámicos \parencite{bai_et_al_2023}. En este avance se presta especial atención al primer enfoque, sin excluir otras alternativas que puedan resultar pertinentes.
+
+En particular, se revisan trabajos relacionados con la estimación y predicción de tiempos de viaje, la representación probabilística de condiciones de tráfico, el uso de información actualizada durante la ejecución, la detección o anticipación de interrupciones y la incorporación de costos o preferencias de distintos actores. El objetivo no es seleccionar todavía una arquitectura definitiva, sino establecer un panorama comparativo de variables, modelos, requerimientos de datos y posibles puntos de integración con el esquema de recuperación de referencia.
+
+\section{Caracterización del problema}
+
+\subsection{Problema de referencia}
+
+El Proyecto aborda un problema de ruteo de vehículos con ventanas de tiempo (VRPTW), en
+el que una flota debe atender un conjunto de clientes sujeto a restricciones operativas y
+temporales. La planeación inicial se construye a partir de información sobre clientes,
+vehículos, tiempos o costos de viaje y ventanas de tiempo.
+
+Una vez iniciada la ejecución de las rutas, pueden presentarse eventos no anticipados que modifiquen las condiciones consideradas durante la planeación. En este contexto, la gestión de interrupciones consiste en revisar dinámicamente un plan operativo después de que ocurre un evento que puede volverlo subóptimo o incluso inviable. Una característica central del problema es que la respuesta debe obtenerse con suficiente rapidez para que el plan modificado pueda implementarse durante la propia operación \parencite{eglese_zambirinis_2018}.
+
+En problemas de transporte, las interrupciones pueden afectar distintos componentes del sistema. La literatura considera, entre otros casos, averías de vehículos, interrupciones en la red vial, problemas de suministro y modificaciones en la demanda de los clientes \parencite{eglese_zambirinis_2018}. También se han estudiado cambios en ventanas de tiempo, direcciones de entrega, cantidades demandadas y combinaciones de varios eventos disruptivos \parencite{wang_ruan_shi_2012}.
+
+Por tanto, el problema de interés no consiste únicamente en producir una planeación inicial eficiente, sino en determinar cómo recuperar o adaptar la operación cuando una interrupción afecta un plan que ya se encuentra en ejecución.
+
+\subsection{Interrupciones y momentos de decisión}
+
+Una interrupción modifica el contexto en el que fue construido el plan original y obliga a determinar qué parte de dicho plan puede conservarse y qué decisiones deben modificarse. Eglese y Zambirinis señalan que, en los problemas de gestión de interrupciones, el plan original constituye un punto de partida relevante para la recuperación, pero pueden surgir nuevas restricciones y costos asociados con la desviación respecto de dicho plan \parencite{eglese_zambirinis_2018}.
+
+Un ejemplo particularmente claro corresponde a la falla de un vehículo durante la operación. Li et al. estudian el reruteo en tiempo real cuando uno o más vehículos quedan imposibilitados para completar los servicios que tenían asignados. En ese escenario, los servicios todavía no iniciados deben ser reasignados considerando el estado actual del sistema y manteniendo restricciones como la capacidad de los vehículos y las ventanas de tiempo \parencite{li_mirchandani_borenstein_2009}.
+
+La necesidad de reaccionar una vez iniciada la operación diferencia este tipo de problemas de una planeación completamente estática. La información disponible cambia después de la interrupción y la nueva decisión debe considerar las condiciones existentes en ese momento. Wang et al., por ejemplo, desarrollan un modelo de recuperación destinado a tratar distintos tipos de interrupciones que pueden presentarse sucesiva o simultáneamente durante una operación de reparto \parencite{wang_ruan_shi_2012}.
+
+En consecuencia, el momento en que ocurre o se detecta una interrupción puede entenderse como un nuevo punto de decisión. A partir de éste debe evaluarse si el plan existente puede mantenerse parcialmente, repararse o requiere una replaneación más amplia.
+
+\subsection{Estado residual de la operación}
+
+Después de una interrupción, el problema de recuperación no equivale a resolver
+nuevamente la instancia original desde el inicio. Una parte de la operación ya ha sido
+ejecutada y algunas decisiones se han vuelto irreversibles; por tanto, cualquier nueva
+planeación debe partir de las condiciones efectivamente existentes en el momento de la
+reoptimización.
+
+Este principio aparece de manera explícita en los problemas de reruteo en tiempo real.
+Li et al. plantean que, ante una falla de vehículo, la recuperación debe concentrarse en
+los servicios todavía no iniciados y considerar el estado actual del sistema
+\parencite{li_mirchandani_borenstein_2009}. De manera similar, Berth y Trigos
+reformulan el problema a partir del punto alcanzado durante la ejecución, separando
+las decisiones ya realizadas de aquellas que todavía pueden modificarse
+\parencite{berth_trigos_2025}.
+
+Para efectos del Proyecto, se denomina \textit{estado residual de la operación} al
+conjunto de información necesaria para describir la parte aún pendiente del sistema
+en el momento de una nueva decisión. Esta representación debe reflejar, al menos, el
+estado actual de los vehículos, los clientes todavía pendientes, las restricciones
+temporales que permanecen vigentes y las condiciones de viaje actualizadas.
+
+La forma específica en que este estado se construye depende del modelo de recuperación
+empleado. En el caso de Berth y Trigos, este procedimiento se desarrolla mediante un
+corte de la instancia en el tiempo de interrupción y se describe con detalle en la
+Sección~\ref{sec:instancia_residual}.
+
+\subsection{Decisiones de recuperación}
+
+La recuperación posterior a una interrupción puede adoptar distintas formas dependiendo del tipo de evento, de su magnitud y de los recursos disponibles. En el caso de una avería, por ejemplo, Li et al. consideran alternativas de reruteo y reasignación de servicios pendientes, mientras que Wang et al. desarrollan un modelo capaz de representar diferentes tipos y combinaciones de interrupciones dentro de una misma operación de reparto \parencite{li_mirchandani_borenstein_2009,wang_ruan_shi_2012}.
+
+La literatura de gestión de interrupciones también muestra que el tiempo disponible para obtener una nueva solución constituye una dimensión importante del problema. No basta con encontrar una solución de buena calidad; ésta debe producirse con suficiente rapidez para resultar operativamente útil \parencite{eglese_zambirinis_2018}. Este compromiso entre tiempo de solución y calidad también aparece en Berth y Trigos, quienes plantean como línea de investigación futura estudiar el tiempo que conviene dedicar al proceso de optimización frente al retraso que puede generar la espera por una mejor solución \parencite{berth_trigos_2025}.
+
+El trabajo de Berth y Trigos proporciona un mecanismo explícito para reformular el problema una vez que una desviación compromete la factibilidad de la planeación original. La recuperación parte del estado de ejecución alcanzado al momento de la interrupción, excluye las decisiones ya ejecutadas y adapta los parámetros y restricciones correspondientes al problema residual \parencite{berth_trigos_2025,berth_thesis_2025}.
+
+La incorporación de inteligencia artificial no necesariamente implica sustituir este mecanismo de recuperación. La literatura sobre aprendizaje automático aplicado al ruteo distingue, entre otras posibilidades, el uso de modelos para mejorar la estimación de parámetros inciertos y el uso de aprendizaje para apoyar directamente el proceso de optimización \parencite{bai_et_al_2023}. Esta distinción amplía los posibles puntos de intervención del Proyecto.
+
+De manera preliminar, pueden identificarse tres grupos de oportunidades:
+
+\begin{itemize}
+    \item mejorar la estimación de variables operativas, como los tiempos de viaje o las condiciones de tráfico;
+    \item apoyar la detección o anticipación de condiciones que puedan provocar una interrupción;
+    \item mejorar la representación de costos, impactos o preferencias asociados con los distintos actores involucrados.
+\end{itemize}
+
+Estas posibilidades no constituyen todavía una selección metodológica. Su pertinencia deberá evaluarse considerando el tratamiento actual de cada variable en el modelo de referencia, los datos necesarios para estimarla, la incertidumbre asociada y la forma en que su salida podría integrarse al mecanismo de recuperación.
+
+\section{Modelo de referencia de Berth y Trigos}
+
+El trabajo de Berth y Trigos constituye el principal modelo de referencia para el
+Proyecto. Su enfoque parte de una planeación de rutas factible antes de iniciar la
+operación y estudia qué ocurre cuando, durante su ejecución, cambios en los tiempos
+de viaje comprometen el cumplimiento de las ventanas de tiempo. Cuando esto sucede,
+el problema se reformula a partir del estado alcanzado por los vehículos y, si las
+restricciones originales ya no permiten una solución factible, se incorporan distintas
+medidas de recuperación y las preferencias de los actores afectados
+\parencite{berth_trigos_2025,berth_thesis_2025}.
+
+Para comprender el mecanismo de referencia y los posibles puntos de extensión,
+conviene distinguir cinco componentes principales: la formulación del VRPTW utilizada
+para construir la planeación inicial; la modificación de los tiempos de viaje durante la
+ejecución; la detección de una interrupción; la construcción de la instancia residual; y
+el modelo de recuperación, que incorpora políticas de mitigación y consideraciones
+transdisciplinarias.
+
+Adicionalmente, Berth desarrolla un esquema de simulación de tráfico para generar las
+perturbaciones utilizadas en los experimentos y evaluar el comportamiento del modelo
+bajo distintas condiciones de congestión.
+
+\subsection{Formulación base del VRPTW}
+
+El punto de partida es un problema de ruteo de vehículos con ventanas de tiempo
+(VRPTW) y múltiples depósitos. La red de distribución se representa mediante un
+grafo \(G=(N,E)\), donde \(N\) es el conjunto de nodos correspondientes a clientes
+y depósitos y \(E\) contiene las conexiones posibles entre ellos. El subconjunto
+\(N^D\subset N\) contiene los depósitos, mientras que
+\(N^C=N\setminus N^D\) contiene los clientes. La flota disponible se representa
+mediante el conjunto \(K\) \parencite{berth_thesis_2025}.
+
+Para cada vehículo \(k\in K\), se define un nodo de origen \(\alpha_k\) y un nodo
+de destino \(\omega_k\). Los conjuntos
+
+\[
+A=\{\alpha_k\mid k\in K\},
+\qquad
+\Omega=\{\omega_k\mid k\in K\}
+\]
+
+agrupan, respectivamente, los nodos de inicio y término de las rutas. En la
+planeación previa a una interrupción, Berth supone que cada vehículo regresa al
+mismo depósito del que partió, por lo que
+
+\[
+\alpha_k=\omega_k.
+\]
+
+Los principales parámetros y variables de decisión de esta formulación se resumen en
+la Tabla~\ref{tab:vrptw_base}.
+
+\begin{table}[ht]
+\centering
+\small
+\caption{Principales elementos de la formulación base del VRPTW}
+\label{tab:vrptw_base}
+
+\renewcommand{\arraystretch}{1.12}
+
+\begin{tabularx}{\textwidth}{@{}>{\raggedright\arraybackslash}p{0.11\textwidth}X@{}}
+\toprule
+\textbf{Símbolo} & \textbf{Definición} \\
+\midrule
+
+\multicolumn{2}{@{}l}{\textbf{\textit{Parámetros}}} \\[0.35em]
+
+\(t_{ij}\) &
+Tiempo de viaje del nodo \(i\) al nodo \(j\). En la formulación de Berth incluye
+también el tiempo de servicio \(s_j\) correspondiente al nodo de destino. \\[0.15em]
+
+\(T=[t_{ij}]\) &
+Matriz de tiempos de viaje cuyos elementos son los valores \(t_{ij}\) entre los nodos
+de la instancia. \\[0.15em]
+
+\([e_i,l_i]\) &
+Ventana de tiempo del nodo \(i\), donde \(e_i\) es el instante más temprano permitido
+para su atención y \(l_i\) el más tardío. \\[0.15em]
+
+\(TW\) &
+Matriz que reúne las ventanas de tiempo \([e_i,l_i]\) de todos los nodos. \\[0.15em]
+
+\(c^t\) &
+Costo operativo por unidad de tiempo de viaje. \\[0.15em]
+
+\(M\) &
+Constante suficientemente grande utilizada en las restricciones de consistencia temporal. \\
+
+\addlinespace[0.65em]
+\multicolumn{2}{@{}l}{\textbf{\textit{Variables de decisión}}} \\[0.35em]
+
+\(x_{ij}\) &
+Variable binaria que toma el valor 1 si el arco \(i\rightarrow j\) forma parte de una
+ruta y 0 en otro caso. \\[0.15em]
+
+\(a_i\) &
+Instante de llegada del vehículo al nodo \(i\); bajo los supuestos de Berth,
+coincide con el inicio de la atención del cliente. \\
+
+\bottomrule
+\end{tabularx}
+\end{table}
+
+Con esta notación, Berth formula el problema base como un modelo de programación
+entera mixta cuya función objetivo minimiza el costo operativo asociado con los
+arcos seleccionados:
+
+\[
+\min Z =
+\sum_{i\in N}
+\sum_{\substack{j\in N\\j\neq i}}
+c^t\,t_{ij}\,x_{ij}.
+\]
+
+La variable \(x_{ij}\) determina si el arco \(i\rightarrow j\) forma parte de alguna
+ruta. Cuando \(x_{ij}=1\), el término \(c^t t_{ij}\) contribuye a la función objetivo;
+cuando \(x_{ij}=0\), dicho arco no genera costo en la solución. Dado que \(t_{ij}\)
+incluye, bajo la convención de Berth, tanto el tiempo asociado al desplazamiento como
+el tiempo de servicio del nodo de destino, la función objetivo penaliza el tiempo
+operativo asociado con las transiciones seleccionadas.
+
+La función objetivo se encuentra sujeta a las siguientes restricciones principales:
+
+\[
+\sum_{j\in N\setminus A}x_{\alpha_kj}=1
+\qquad \forall k\in K,
+\]
+
+\[
+\sum_{i\in N\setminus\Omega}x_{i\omega_k}=1
+\qquad \forall k\in K,
+\]
+
+\[
+\sum_{\substack{j\in N\\j\neq i}}x_{ij}
+-
+\sum_{\substack{j\in N\\j\neq i}}x_{ji}
+=0
+\qquad \forall i\in N,
+\]
+
+\[
+\sum_{\substack{j\in N\\j\neq i}}x_{ij}=1
+\qquad \forall i\in N^C.
+\]
+
+Las dos primeras expresiones obligan a que cada vehículo inicie y termine su ruta
+en los nodos correspondientes. La tercera preserva la continuidad de las rutas:
+si una ruta llega a un nodo, también debe salir de él. La cuarta exige que cada
+cliente sea atendido exactamente una vez
+\parencite{berth_thesis_2025}.
+
+Las ventanas de tiempo se incorporan mediante
+
+\[
+e_i\leq a_i\leq l_i
+\qquad \forall i\in N,
+\]
+
+mientras que la consistencia temporal entre dos nodos consecutivos se expresa como
+
+\[
+a_i+t_{ij}-a_j
+\leq
+M(1-x_{ij})
+\qquad
+\forall\, i,j\in N\setminus N^D,\; i\neq j.
+\]
+
+Si \(x_{ij}=1\), esta última restricción se reduce a
+
+\[
+a_j\geq a_i+t_{ij},
+\]
+
+de modo que el tiempo asignado al nodo \(j\) debe ser compatible con el tiempo
+asignado al nodo \(i\) y con el valor \(t_{ij}\) asociado a la transición entre ambos.
+Cuando \(x_{ij}=0\), el término \(M(1-x_{ij})\) relaja esta restricción, de modo
+que no se impone una relación temporal entre los nodos \(i\) y \(j\).
+
+Por tanto, \(x_{ij}\) determina la estructura de las rutas, mientras que \(a_i\)
+permite verificar que esa estructura pueda ejecutarse respetando las ventanas de
+tiempo. La función objetivo minimiza el costo operativo asociado a las transiciones
+seleccionadas, mientras que las variables \(a_i\) intervienen en las restricciones de
+factibilidad temporal y no directamente en el costo.
+
+La formulación se apoya además en varios supuestos que resultan relevantes para las
+etapas posteriores. Berth considera únicamente incrementos en los tiempos de viaje;
+supone que todos los vehículos pueden atender a todos los clientes y no incorpora
+restricciones explícitas de capacidad; incluye el tiempo de servicio dentro de
+\(t_{ij}\); y supone que un vehículo que ya se encuentra recorriendo un arco debe
+completar ese desplazamiento antes de que pueda modificarse su ruta
+\parencite{berth_thesis_2025}.
+
+En la instancia industrial utilizada en la tesis, la matriz \(T\) no se estima durante
+la operación. Se construye previamente a partir de las coordenadas de clientes y
+depósitos mediante el servicio de matrices de OpenRouteService. Por tanto, al
+resolver el VRPTW inicial, \(T\) forma parte de los datos conocidos de la instancia
+\parencite{berth_thesis_2025}.
+
+\subsection{Modificación de los tiempos de viaje}
+
+Una vez obtenida la solución del VRPTW, las rutas comienzan a ejecutarse. Durante
+la operación pueden presentarse incrementos en los tiempos de viaje respecto de los
+valores utilizados para construir la planeación original.
+
+Berth representa el incremento correspondiente al arco \(i\rightarrow j\) mediante
+
+\[
+\Delta t_{ij}\geq 0,
+\]
+
+por lo que el tiempo actualizado es
+
+\[
+t'_{ij}=t_{ij}+\Delta t_{ij}.
+\]
+
+En forma matricial,
+
+\[
+T'=T+\Delta T.
+\]
+
+Los incrementos \(\Delta t_{ij}\) no son decisiones del optimizador. Representan
+cambios en las condiciones externas bajo las cuales se ejecutan las rutas. La matriz
+\(T'\) describe, por tanto, las condiciones de viaje actualizadas
+\parencite{berth_thesis_2025}.
+
+Un incremento en los tiempos de viaje no implica necesariamente que el plan haya
+dejado de ser viable. Una ruta puede disponer de suficiente margen temporal para
+absorber un retraso y continuar cumpliendo las ventanas de tiempo. El elemento
+relevante para el modelo es si el efecto de la desviación termina por hacer imposible
+el cumplimiento de alguna de ellas.
+
+Esta distinción da lugar a dos situaciones. Si los parámetros actualizados todavía
+permiten resolver el problema respetando las restricciones originales, puede utilizarse
+nuevamente el VRPTW. Si las nuevas condiciones producen una situación que ya no
+puede resolverse bajo esas restricciones, se requiere un problema de recuperación
+que permita introducir medidas adicionales
+\parencite{berth_thesis_2025}.
+
+En lo que sigue, la sigla DVRPTW se utiliza en el sentido de
+\textit{Disrupted Vehicle Routing Problem with Time Windows}, de acuerdo con la
+terminología empleada en el trabajo de Berth.
+
+\subsection{Detección de la interrupción}
+
+Para determinar si una desviación en los tiempos de viaje compromete realmente la
+planeación, Berth incorpora un procedimiento de monitoreo de factibilidad. En un
+instante de observación \(t_m\), el procedimiento examina las partes todavía pendientes
+de las rutas utilizando los tiempos actualizados contenidos en \(T'\)
+\parencite{berth_thesis_2025}.
+
+La lógica del algoritmo consiste en proyectar el efecto del retraso hacia los siguientes
+nodos de cada ruta. Cuando una parte del retraso puede absorberse mediante el margen
+disponible antes del cierre de una ventana de tiempo, la ruta continúa siendo factible.
+El retraso que no puede absorberse se propaga hacia los nodos posteriores.
+
+Si esta propagación conduce a una futura violación de una ventana de tiempo, el
+procedimiento identifica un tiempo de interrupción \(t_D\). En la formulación de
+Berth, \(t_D\) corresponde al tiempo de llegada al nodo inmediatamente anterior a
+aquel en el que se produciría la pérdida de factibilidad.
+
+Así, \(t_D\) no es una variable elegida por el modelo de optimización, sino un valor
+derivado del monitoreo de la solución en ejecución. Conceptualmente, el mecanismo
+puede representarse como
+
+\[
+\begin{aligned}
+\text{incremento en } t_{ij}
+&\longrightarrow
+\text{propagación del retraso}
+\longrightarrow
+\text{pérdida de holgura}
+\\
+&\longrightarrow
+\text{violación futura de una ventana}
+\longrightarrow
+t_D.
+\end{aligned}
+\]
+
+El propósito es detectar la pérdida de factibilidad antes de que el vehículo alcance
+el nodo cuya ventana ya no podría cumplirse, de manera que exista un margen para
+calcular una solución de recuperación
+\parencite{berth_thesis_2025}.
+
+\subsection{Construcción de la instancia residual}
+\label{sec:instancia_residual}
+
+Una vez determinado \(t_D\), las decisiones que ya fueron ejecutadas no pueden
+modificarse. El problema de recuperación se construye entonces a partir de la parte
+restante de la operación, mediante un ``corte'' de la instancia original en el tiempo
+de interrupción
+\parencite{berth_thesis_2025}.
+
+Para realizar este corte se distingue entre vehículos estacionarios y vehículos que se
+encuentran en tránsito. Si un vehículo se encuentra detenido en un nodo, dicho nodo
+puede utilizarse como su nueva posición inicial. Si se encuentra recorriendo un arco,
+Berth supone que debe completar ese desplazamiento hasta el siguiente nodo. En este
+último caso se adapta el tiempo restante del recorrido y se fuerza la continuación
+hacia el destino inmediato del arco en curso.
+
+A partir de estas condiciones se construye un nuevo conjunto de posiciones iniciales
+\(A'\). Los clientes ya atendidos se excluyen y se conserva únicamente el conjunto
+de nodos que todavía deben formar parte de la planeación, denotado por \(N'\).
+La matriz de tiempos también se actualiza para incorporar las desviaciones relevantes.
+
+La instancia que se entrega al problema de recuperación puede entenderse, por tanto,
+como
+
+\[
+\text{estado alcanzado en }t_D
++
+\text{clientes pendientes}
++
+\text{tiempos de viaje actualizados}
+\longrightarrow
+\text{instancia residual}.
+\]
+
+Esta reformulación es importante porque la recuperación no consiste en resolver
+nuevamente el problema original desde el comienzo del turno. El nuevo problema debe
+respetar las decisiones que ya fueron ejecutadas y partir de la situación efectiva de
+cada vehículo.
+
+\subsection{Políticas de recuperación y extensión transdisciplinaria}
+
+Cuando la instancia residual no puede resolverse conservando todas las restricciones
+del VRPTW original, Berth incorpora diferentes políticas que permiten recuperar la
+factibilidad. La tesis considera cinco medidas:
+
+\begin{itemize}
+    \item horas extra para los conductores;
+    \item utilización de vehículos de respaldo;
+    \item tercerización de entregas;
+    \item servicio antes del inicio de una ventana de tiempo;
+    \item servicio después del cierre de una ventana de tiempo.
+\end{itemize}
+
+Cada medida tiene un costo asociado. Los parámetros \(c^{ot}\), \(c^{s}\),
+\(c^{os}\), \(c^{es}\) y \(c^{ls}\) representan, respectivamente, los costos de
+horas extra, activación de un vehículo de respaldo, tercerización, servicio temprano
+y servicio tardío
+\parencite{berth_thesis_2025}.
+
+La formulación introduce además variables auxiliares para cuantificar horas extra y
+violaciones de las ventanas de tiempo, así como una variable binaria \(d_i\) que
+permite representar que la entrega de un cliente sea atendida mediante outsourcing.
+De este modo, algunas restricciones que en el VRPTW original eran estrictas pueden
+convertirse en restricciones blandas, pero su utilización genera una penalización en
+la función objetivo.
+
+La contribución transdisciplinaria consiste en que dichas penalizaciones no dependen
+únicamente de su costo financiero. Los integrantes del equipo transdisciplinario
+valoran el impacto de cada política \(p\) en una escala de 1 a 10, donde 1 representa
+una política preferida, 5 una posición neutral y 10 una fuerte aversión
+\parencite{berth_thesis_2025}.
+
+Para evitar confundir el índice de los actores con el índice \(i\) utilizado previamente
+para los nodos, se denotará aquí por \(r\) a cada stakeholder y por
+\(\ell_{rp}\) su valoración de la política \(p\). Estas valoraciones se agregan mediante
+
+\[
+\lambda_p=
+\frac{
+\left(
+\prod_{r=1}^{|\mathcal{H}|}\ell_{rp}
+\right)^{1/|\mathcal{H}|}
+}{5},
+\]
+
+donde \(\mathcal{H}\) representa el conjunto de stakeholders considerados. El
+coeficiente \(\lambda_p\) modifica posteriormente el peso del costo correspondiente
+a la política \(p\).
+
+De forma esquemática, la función objetivo del TD-DVRPTW puede expresarse como
+
+\[
+Z_{\mathrm{TD}}
+=
+C_{\mathrm{viaje}}
++
+\lambda_0 C_{\mathrm{horas\ extra}}
++
+\lambda_1 C_{\mathrm{respaldo}}
++
+\lambda_2 C_{\mathrm{outsourcing}}
++
+\lambda_3 C_{\mathrm{servicio\ temprano}}
++
+\lambda_4 C_{\mathrm{servicio\ tardío}}.
+\]
+
+Esta expresión resume la estructura de la función objetivo presentada por Berth:
+el costo de viaje continúa siendo el componente base, mientras que las distintas
+medidas de recuperación se incorporan como costos adicionales ponderados por las
+preferencias agregadas de los stakeholders
+\parencite{berth_thesis_2025}.
+
+En la instancia ilustrativa de la tesis, la información de los stakeholders no provino
+de entrevistas reales. Berth utilizó instancias independientes de un modelo de lenguaje
+para simular la perspectiva de cada actor bajo el enfoque de \textit{Homo Silicus}.
+Las respuestas obtenidas se transformaron posteriormente en las valoraciones empleadas
+para calcular los coeficientes \(\lambda_p\)
+\parencite{berth_thesis_2025,horton_filippas_manning_2023}.
+
+\subsection{Simulación de las perturbaciones de tráfico}
+
+El mecanismo de recuperación descrito anteriormente requiere como entrada tiempos de
+viaje actualizados. Para evaluar el modelo mediante experimentos repetidos, la tesis
+incorpora una simulación que genera cambios aleatorios en dichos tiempos. Esta
+simulación debe distinguirse del modelo de optimización: su función es producir las
+perturbaciones bajo las cuales posteriormente se evalúa la factibilidad de las rutas.
+
+Berth representa la ocurrencia de congestión mediante una variable indicadora \(I_m\)
+y la severidad del evento mediante un multiplicador aleatorio \(U_m\). La tesis utiliza
+el índice \(m\) en estas expresiones sin definirlo de manera independiente en su glosario.
+Para efectos de esta exposición, \(m\) se utilizará para identificar el periodo o realización
+de la simulación en el que se evalúa la perturbación de tráfico.
+
+La actualización del tiempo asociado al arco \(i\rightarrow j\) se expresa como
+
+\[
+t'_{ij}(m)=
+\begin{cases}
+t_{ij}U_m, & \text{si } I_m=1,\\
+t_{ij}, & \text{si } I_m=0,
+\end{cases}
+\]
+
+con
+
+\[
+I_m\sim\operatorname{Bernoulli}(p_{\mathrm{jam}})
+\]
+
+y
+
+\[
+U_m\sim\operatorname{Lognormal}(\mu,\sigma^2)+1.
+\]
+
+El parámetro \(p_{\mathrm{jam}}\) determina la probabilidad de que ocurra congestión
+en una realización de la simulación. La variable \(I_m\) indica si dicha congestión
+ocurre, mientras que \(U_m\) determina la magnitud del incremento aplicado al tiempo
+\(t_{ij}\) cuando \(I_m=1\). La perturbación permanece activa durante un intervalo
+\(\delta t\) \parencite{berth_thesis_2025}.
+
+En los experimentos, las probabilidades de congestión se fijan de manera que reflejen
+patrones horarios, con mayor incidencia alrededor de las 08:00 y las 18:00 horas.
+Para generar escenarios con distinta severidad, Berth fija \(\sigma=0.6\) y modifica
+el parámetro \(\mu\) de la distribución log-normal
+\parencite{berth_thesis_2025}.
+
+Es importante distinguir este mecanismo de una predicción de tráfico. La simulación
+introduce aleatoriedad, pero los parámetros que determinan la frecuencia y la
+severidad de los eventos se establecen previamente para construir los escenarios
+experimentales. El modelo no estima \(p_{\mathrm{jam}}\), \(\mu\) o \(\sigma\)
+a partir de observaciones de tráfico recibidas durante la operación.
+
+Durante los experimentos, cada periodo de simulación representa un minuto. En cada
+periodo se evalúa la ocurrencia de eventos de congestión y, cuando alguno se presenta,
+se modifican los tiempos correspondientes de la matriz original \(T\), dando lugar a
+una matriz de tiempos actualizada \(T'\). A partir de \(T'\), el procedimiento de
+monitoreo examina las rutas en ejecución para determinar si los retrasos introducidos
+pueden ser absorbidos por las holguras disponibles o si conducirán a una futura
+violación de las ventanas de tiempo.
+
+Cuando se identifica una interrupción, se determina y registra el tiempo \(t_D\).
+Al alcanzar dicho instante, la instancia y la solución en ejecución se cortan de acuerdo
+con el estado alcanzado por la operación. Los tiempos de viaje actualizados se
+incorporan a la instancia residual, que posteriormente se envía al solver para recalcular
+las rutas \parencite{berth_thesis_2025}.
+
+\subsection{Síntesis del mecanismo de referencia}
+
+El enfoque de Berth puede entenderse como un proceso de planeación, monitoreo y
+recuperación de rutas. Sus principales etapas se resumen a continuación
+\parencite{berth_thesis_2025}:
+
+\begin{enumerate}
+    \item \textbf{Planeación inicial.}
+    A partir de los datos de la instancia, entre ellos la matriz de tiempos de viaje
+    \(T\) y las ventanas de tiempo \(TW\), se resuelve el VRPTW y se obtiene un
+    conjunto de rutas factibles que constituye el plan inicial de operación.
+
+    \item \textbf{Ejecución y actualización de las condiciones de viaje.}
+    Una vez iniciadas las rutas, los tiempos de viaje pueden diferir de los utilizados
+    en la planeación original. Estas variaciones se representan mediante
+    \(\Delta T\), dando lugar a una matriz actualizada \(T'\). En los experimentos
+    de Berth, dichas variaciones se generan mediante una simulación de congestión.
+
+    \item \textbf{Monitoreo de la factibilidad.}
+    A partir de los tiempos contenidos en \(T'\), se examinan las partes todavía
+    pendientes de las rutas para determinar si los retrasos pueden ser absorbidos por
+    las holguras disponibles. Mientras las ventanas de tiempo puedan seguir
+    cumpliéndose, la operación permanece factible. Si la propagación del retraso
+    conduce a una futura violación de una ventana, se identifica el tiempo de
+    interrupción \(t_D\).
+
+    \item \textbf{Construcción de la instancia residual.}
+    Cuando se identifica una interrupción, la planeación no se reconstruye desde el
+    inicio del turno. La instancia se adapta al estado alcanzado en \(t_D\): se
+    excluyen las visitas ya realizadas, se actualizan los nodos de inicio de los
+    vehículos, se preservan los desplazamientos que ya no pueden modificarse y se
+    incorporan los tiempos de viaje actualizados. El resultado es una instancia
+    residual que contiene la parte pendiente de la operación.
+
+    \item \textbf{Reoptimización y, cuando es necesario, recuperación.}
+    Si la instancia adaptada puede resolverse conservando las restricciones del VRPTW,
+    se obtiene una nueva planeación bajo la formulación original. Si las condiciones
+    modificadas provocan infactibilidad, el DVRPTW amplía el modelo mediante
+    políticas de recuperación, entre ellas horas extra, vehículos de respaldo,
+    tercerización de entregas y flexibilización de las ventanas de tiempo.
+\end{enumerate}
+
+En la extensión transdisciplinaria, TD-DVRPTW, las políticas de recuperación conservan
+sus costos operativos, pero éstos son ponderados mediante coeficientes \(\lambda_p\)
+obtenidos a partir de las valoraciones de los stakeholders. Estos coeficientes forman
+parte de los parámetros utilizados al resolver el problema de recuperación; no
+constituyen una etapa posterior a la reoptimización
+\parencite{berth_thesis_2025}.
+
+Las rutas obtenidas tras la reoptimización se incorporan nuevamente a la operación y
+pueden quedar sujetas al mismo proceso de monitoreo. En los experimentos de la tesis,
+cada periodo de simulación representa un minuto: se evalúa la ocurrencia de
+perturbaciones de tráfico, se actualiza la matriz de tiempos cuando corresponde y se
+revisa la factibilidad de las rutas. Cuando se detecta una interrupción, se registra
+\(t_D\) y, al alcanzarse dicho instante, la instancia se corta y se recalcula
+\parencite{berth_thesis_2025}.
+
+Esta descomposición permite distinguir la función de los principales elementos del
+enfoque. \(T\) y \(TW\) describen condiciones de la instancia utilizada para construir
+la planeación inicial; \(\Delta T\) y \(T'\) representan cambios en las condiciones de
+viaje durante la ejecución; el procedimiento de monitoreo determina si esos cambios
+comprometen la factibilidad e identifica, en su caso, \(t_D\); el corte de la instancia
+define el problema residual; y las políticas de recuperación amplían las alternativas
+disponibles cuando las restricciones originales dejan de ser suficientes. En la variante
+transdisciplinaria, los coeficientes \(\lambda_p\) modifican el peso relativo de los
+costos asociados con dichas políticas.
+
+Para el presente Proyecto, esta separación proporciona una base para identificar
+qué componentes podrían enriquecerse mediante información adicional, estimaciones
+probabilísticas o técnicas de inteligencia artificial, sin confundir dichas extensiones
+con el mecanismo de optimización y recuperación desarrollado por Berth y Trigos.
+
+\section{Panorama de modelos y técnicas aplicables}
+
+La reconstrucción del modelo de referencia permite delimitar con mayor precisión
+dónde podrían incorporarse técnicas de inteligencia artificial o modelado probabilístico.
+En particular, existen componentes cuya función no consiste en decidir directamente
+las rutas, sino en proporcionar información al mecanismo de optimización: los tiempos
+de recorrido utilizados para construir los valores de \(T\) y \(T'\), las condiciones
+de tráfico que producen sus variaciones y las valoraciones de los stakeholders que
+intervienen en los coeficientes \(\lambda_p\).
+
+Esta distinción coincide con la clasificación propuesta por Bai et al., quienes
+diferencian entre el uso de aprendizaje automático para mejorar el modelado del
+problema y su estimación de parámetros, y su utilización dentro de los propios
+procedimientos de optimización \parencite{bai_et_al_2023}. Para el alcance actual
+del Proyecto resulta especialmente relevante el primer enfoque, ya que permite
+mantener el mecanismo de optimización y recuperación desarrollado por Berth y
+Trigos y concentrar el componente de inteligencia artificial en la información que
+alimenta dicho mecanismo.
+
+Las alternativas revisadas no constituyen métodos equivalentes ni necesariamente
+excluyentes. Algunas permiten identificar estados o regímenes de tráfico; otras
+estiman o predicen tiempos de viaje y su incertidumbre; otras proporcionan mecanismos
+para incorporar información actualizada durante la ejecución; y los modelos de
+lenguaje ofrecen una vía distinta para representar información cualitativa asociada
+con los stakeholders. Por ello, su comparación debe realizarse atendiendo a la
+variable que modelan, los datos que requieren, la salida que producen y el punto en
+el que dicha salida podría integrarse al esquema de referencia.
+
+\subsection{Aprendizaje automático como apoyo al modelado del VRP}
+
+Una primera distinción relevante consiste en separar el uso de inteligencia artificial
+para resolver directamente un problema de ruteo de su utilización para estimar
+información que posteriormente recibe un método de optimización. Bai et al.
+denominan a este último grupo \textit{ML-assisted VRP modelling} y destacan que
+variables relevantes en aplicaciones reales, como la demanda de los clientes o los
+tiempos de viaje, pueden ser inciertas y requerir modelos predictivos o métodos de
+estimación basados en datos \parencite{bai_et_al_2023}.
+
+Esta perspectiva resulta compatible con el modelo de Berth. En su formulación, el
+solver recibe valores concretos de \(t_{ij}\) al resolver cada instancia, mientras que
+las alteraciones del tráfico se generan externamente mediante un mecanismo de
+simulación. Por tanto, una posible incorporación de aprendizaje automático no tendría
+que sustituir al VRPTW o al TD-DVRPTW: podría utilizarse para construir o actualizar
+algunos de los parámetros que posteriormente recibe el optimizador.
+
+Desde esta perspectiva pueden distinguirse, de manera preliminar, tres tipos de
+información de especial interés:
+
+\begin{itemize}
+    \item \textbf{estado del tráfico}, entendido como la condición bajo la cual se
+    encuentra una parte de la red en un momento determinado;
+
+    \item \textbf{tiempo de recorrido}, entendido como el valor esperado o distribución
+del tiempo necesario para recorrer un arco o camino bajo determinadas condiciones;
+
+    \item \textbf{información contextual de los stakeholders}, utilizada para
+    representar preferencias o impactos asociados con las políticas de recuperación.
+\end{itemize}
+
+La literatura revisada ofrece alternativas diferentes para cada uno de estos
+componentes. Su utilidad para el Proyecto dependerá no sólo de su capacidad
+predictiva, sino también de la disponibilidad de datos y de la forma en que su salida
+pueda incorporarse al esquema de monitoreo y recuperación.
+
+\subsection{Estimación probabilística de condiciones de tráfico y tiempos de viaje}
+
+Una de las diferencias principales entre el esquema experimental de Berth y los
+enfoques basados en datos se encuentra en la forma en que se representan las
+condiciones de viaje. En la tesis, la ocurrencia y severidad de la congestión se generan
+mediante parámetros definidos previamente para la simulación. Una alternativa consiste
+en inferir el estado del tráfico o estimar los tiempos de viaje a partir de observaciones.
+
+Dentro de esta línea, la inferencia bayesiana, los modelos de mezclas gaussianas y la
+regresión mediante procesos gaussianos cumplen funciones diferentes. La inferencia
+bayesiana proporciona un marco para actualizar una estimación a partir de nueva
+evidencia; los Gaussian Mixture Models permiten representar distribuciones formadas
+por distintos grupos o regímenes latentes; y Gaussian Process Regression aborda un
+problema de regresión probabilística, produciendo una distribución predictiva para
+una variable continua.
+
+\subsubsection*{Inferencia bayesiana y Gaussian Mixture Models}
+
+Mil y Piantanakulchai proponen un esquema de estimación de tiempos de viaje que
+combina un Gaussian Mixture Model (GMM) con un procedimiento de fusión bayesiana
+de datos provenientes de diferentes tipos de sensores
+\parencite{mil_piantanakulchai_2018}.
+
+En términos generales, el teorema de Bayes relaciona una distribución previa con la
+información proporcionada por nuevas observaciones:
+
+\[
+p(\theta\mid D)
+=
+\frac{p(D\mid\theta)p(\theta)}{p(D)},
+\]
+
+donde \(p(\theta)\) representa el conocimiento previo sobre una cantidad de interés,
+\(p(D\mid\theta)\) la probabilidad de observar los datos \(D\) bajo dicho valor y
+\(p(\theta\mid D)\) la distribución posterior después de incorporar la evidencia.
+
+En el trabajo de Mil y Piantanakulchai, el GMM se utiliza previamente para clasificar
+las condiciones observadas en distintos regímenes de tráfico. Los experimentos
+consideran tres estados: flujo libre, transición y congestión. Una vez identificado el
+régimen, el procedimiento bayesiano combina estimaciones de tiempo de viaje obtenidas
+a partir de distintas fuentes, incorporando además diferencias de sesgo entre sensores
+\parencite{mil_piantanakulchai_2018}.
+
+El GMM puede interpretarse como una distribución compuesta por varios componentes
+gaussianos:
+
+\[
+p(\mathbf{z})
+=
+\sum_{g=1}^{G}
+\pi_g\,
+\mathcal{N}(\mathbf{z}\mid\boldsymbol{\mu}_g,\Sigma_g),
+\]
+
+donde \(\mathbf{z}\) representa una observación de las condiciones de tráfico,
+\(G\) es el número de componentes, \(\pi_g\) es la proporción asociada con cada
+componente y \(\boldsymbol{\mu}_g\) y \(\Sigma_g\) representan su media y
+covarianza. En este contexto, cada componente puede asociarse con un régimen de
+tráfico y una observación puede evaluarse probabilísticamente respecto de dichos
+regímenes.
+
+La relevancia de este enfoque para el modelo de referencia se encuentra en que permite
+separar dos problemas que en la simulación de Berth se parametrizan previamente:
+caracterizar las condiciones de tráfico y estimar el tiempo de viaje correspondiente a
+esas condiciones. Una aplicación de este tipo podría proporcionar estimaciones para
+actualizar los valores de \(T'\) a partir de información disponible sobre el estado del
+tráfico, en lugar de depender exclusivamente de parámetros definidos para generar
+escenarios.
+
+El estudio de Mil y Piantanakulchai utiliza información procedente de diferentes tipos
+de sensores. Para el presente Proyecto, el interés se concentra en la estructura
+metodológica del enfoque ---clasificación del estado del tráfico y estimación
+probabilística del tiempo de viaje--- y no en el desarrollo de una infraestructura
+propia de sensado. La incorporación de fuentes de información en tiempo real podría
+considerarse posteriormente como una extensión del sistema.
+
+\subsubsection*{Gaussian Process Regression}
+
+Gaussian Process Regression (GPR) constituye una alternativa para predecir una
+variable continua proporcionando no sólo una estimación puntual, sino una distribución
+predictiva. Idé y Kato aplican este enfoque a la predicción del tiempo de recorrido
+de un camino entre un origen y un destino \parencite{ide_kato_2009}.
+
+En su trabajo, un camino se define como una secuencia ordenada de segmentos de la
+red vial que conecta un origen con un destino, donde cada segmento está conectado
+con el siguiente a través de una intersección. Para un par origen--destino dado, el conjunto de entrenamiento se representa como
+
+\[
+D=\{(x^{(n)},y^{(n)})\}_{n=1}^{N},
+\]
+
+donde \(x^{(n)}\) representa el camino seguido en la observación \(n\), expresado
+como una secuencia de segmentos de la red, y \(y^{(n)}\) es el tiempo total observado
+para recorrer dicho camino. El objetivo consiste en obtener, para un nuevo camino
+\(x\), la distribución predictiva
+
+\[
+p(y\mid x,D).
+\]
+
+A partir de esta distribución pueden obtenerse tanto el tiempo esperado de recorrido
+
+\[
+m(x)=\mathbb{E}[y\mid x,D]
+\]
+
+como una medida de su incertidumbre mediante la varianza predictiva
+
+\[
+s^2(x)=\operatorname{Var}(y\mid x,D).
+\]
+
+Idé y Kato utilizan funciones kernel para medir la similitud entre distintos caminos.
+En particular, representan cada camino como una secuencia de símbolos asociados con
+los segmentos viales y emplean un \textit{string kernel} para evaluar la presencia de
+subsecuencias comunes. Esta representación permite relacionar caminos que comparten
+partes de su recorrido y producir predicciones incluso para caminos que no aparecen
+exactamente en el conjunto de entrenamiento \parencite{ide_kato_2009}.
+
+Para el Proyecto, el interés de GPR radica en la posibilidad de obtener una
+distribución predictiva del tiempo necesario para recorrer un determinado camino
+entre dos puntos de la red. Si dicho camino corresponde al desplazamiento entre los
+nodos \(i\) y \(j\) de una instancia del VRPTW, la predicción podría utilizarse para
+estimar el componente de recorrido asociado a esa transición. Para construir el valor
+\(t_{ij}\) utilizado por Berth sería necesario considerar además el tiempo de servicio
+\(s_j\) correspondiente al nodo de destino. Además del valor esperado, GPR
+proporciona una medida explícita de incertidumbre, lo que permitiría estudiar si el
+mecanismo de monitoreo debe considerar únicamente un tiempo estimado o también la
+posibilidad de alcanzar valores capaces de comprometer una ventana temporal.
+
+La aplicación de Idé y Kato no utiliza directamente la misma representación del
+problema de Berth. Su variable explicativa principal es el camino seguido y los autores
+trabajan, para cada par origen--destino, con observaciones obtenidas dentro de un
+periodo temporal acotado. Factores como la hora del día no se incorporan como
+variables explicativas explícitas del modelo. Por tanto, si en el Proyecto se quisiera
+modelar directamente el efecto de variables temporales, meteorológicas o de otras
+condiciones contextuales sobre los tiempos de viaje, sería necesario adaptar la
+especificación del modelo.
+
+\subsection{Incorporación de información dinámica durante la ejecución}
+
+La estimación de tiempos de viaje constituye sólo una parte del problema. Para que dicha
+información modifique una operación en curso se requiere además un mecanismo capaz de recibir
+actualizaciones, determinar su relevancia y trasladarlas al proceso de planeación.
+
+Fleischmann et al. desarrollan un sistema de ruteo dinámico basado en información de tráfico
+en línea. Su arquitectura incluye un sistema de observación que recibe información de un centro
+de gestión de tráfico, calcula tiempos y caminos relevantes y monitorea cambios significativos en
+los caminos relevantes para la operación en curso. Cuando se recibe información relevante, el
+sistema de gestión actualiza el estado de vehículos, órdenes y tiempos de viaje y puede iniciar una
+nueva ejecución del sistema de planeación \parencite{fleischmann_gnutzmann_sandvoss_2004}.
+
+Este enfoque resulta particularmente relevante porque los cambios en los tiempos de viaje se
+tratan como eventos que pueden provocar una nueva decisión. La información dinámica no obliga
+a recalcular continuamente todas las relaciones de la red; se filtra y se monitorean principalmente
+aquellas que resultan relevantes para la operación en curso
+\parencite{fleischmann_gnutzmann_sandvoss_2004}.
+
+Gmira et al. estudian un problema relacionado en el que se reciben actualizaciones de las
+velocidades de viaje sobre una red vial. Cuando llega una actualización, se recalculan los tiempos
+de llegada y salida de los clientes todavía pendientes. Si la ruta continúa siendo factible, se
+conserva. Si deja de serlo, el sistema busca primero nuevos caminos entre ubicaciones consecutivas
+y, si esto no restaura la factibilidad, modifica la secuencia de clientes mediante búsqueda local
+\parencite{gmira_et_al_2021}.
+
+Estos trabajos muestran que la incorporación de información dinámica puede separarse del modelo
+que la genera. Un componente predictivo o probabilístico puede producir estimaciones o
+distribuciones de los tiempos de recorrido, mientras que un mecanismo de monitoreo decide cuándo
+esos cambios son suficientemente relevantes para modificar la planeación.
+
+En relación con Berth, esta literatura sugiere un posible punto de integración entre la estimación
+de las condiciones de tráfico y el algoritmo que monitorea la factibilidad: la información observada
+o predicha podría utilizarse para actualizar los componentes de tiempo de recorrido empleados en
+la construcción de \(T'\), mientras que el procedimiento de recuperación conservaría la
+responsabilidad de determinar si los nuevos tiempos comprometen las ventanas y requieren
+reoptimización.
+
+Para el alcance actual del Proyecto, el interés de estos trabajos se encuentra en la arquitectura de
+integración entre información dinámica, monitoreo y replaneación, no en la implementación de una
+infraestructura propia para adquirir información de tráfico en tiempo real.
+
+\subsection{Representación de preferencias de stakeholders}
+
+Otro componente susceptible de extensión corresponde a la representación de las
+preferencias de los stakeholders dentro del TD-DVRPTW. En el marco transdisciplinario
+propuesto por Berth se identifican los actores involucrados y se consideran objetivos
+y preocupaciones relacionados, entre otros aspectos, con la factibilidad, la satisfacción,
+las finanzas, el ambiente, la reputación y el control
+\parencite{berth_thesis_2025}.
+
+En la instancia ilustrativa de la tesis, Berth utiliza el enfoque de \textit{Homo Silicus}
+para obtener esta información cualitativa mediante instancias independientes de un
+modelo de lenguaje que representan diferentes roles. Las respuestas obtenidas se
+transforman posteriormente en valoraciones de las políticas de recuperación y,
+finalmente, en los coeficientes \(\lambda_p\) utilizados por la función objetivo
+\parencite{berth_thesis_2025,horton_filippas_manning_2023}.
+
+Horton et al. plantean que los modelos de lenguaje pueden utilizarse como agentes
+computacionales a los que se asignan información, preferencias o características y
+cuyo comportamiento se explora posteriormente bajo diferentes escenarios. Esta
+flexibilidad permite estudiar respuestas condicionadas al contexto que serían difíciles
+de resumir mediante una regla completamente fija
+\parencite{horton_filippas_manning_2023}.
+
+Sin embargo, el propio enfoque requiere cautela. Los autores señalan que los agentes
+basados en LLM son representaciones imperfectas del comportamiento humano y que
+su fidelidad depende, entre otros factores, de la especificación de las instrucciones,
+del modelo utilizado y de la validación frente a observaciones humanas
+\parencite{horton_filippas_manning_2023}. Por ello, su utilización no debe
+interpretarse como sustituto automático de información obtenida de stakeholders
+reales.
+
+En el modelo de Berth, las valoraciones se transforman en un coeficiente
+\(\lambda_p\) por política. Una posible extensión consistiría en explorar si ciertas
+valoraciones deberían depender también del contexto específico en que una política
+se aplica. Esta posibilidad resulta coherente con las respuestas reportadas en la tesis,
+en las que la aceptación de medidas como horas extra o outsourcing puede variar
+según las condiciones de implementación. No obstante, la forma de convertir dicha
+información contextual en parámetros cuantitativos requeriría una metodología de
+validación explícita.
+
+\subsection{Síntesis comparativa de variables, modelos y puntos de integración}
+
+La Tabla~\ref{tab:modelos_variables} resume las principales alternativas identificadas
+y su relación con el mecanismo de referencia. La tabla no implica que todas deban
+implementarse ni que sean mutuamente excluyentes; su propósito es mostrar qué
+problema aborda cada una y qué información podría aportar al TD-DVRPTW.
+
+\begin{table}[ht]
+\centering
+\small
+\caption{Variables, modelos y posibles puntos de integración con el esquema de referencia}
+\label{tab:modelos_variables}
+
+\renewcommand{\arraystretch}{1.15}
+
+\begin{tabularx}{\textwidth}{
+@{}
+>{\raggedright\arraybackslash}p{0.16\textwidth}
+>{\raggedright\arraybackslash}p{0.19\textwidth}
+>{\raggedright\arraybackslash}p{0.25\textwidth}
+>{\raggedright\arraybackslash}X
+@{}}
+\toprule
+\textbf{Componente} &
+\textbf{Modelo o mecanismo} &
+\textbf{Salida principal} &
+\textbf{Posible integración con Berth} \\
+\midrule
+
+Estado del tráfico &
+GMM &
+Clasificación probabilística de las condiciones observadas en distintos regímenes de tráfico. &
+Caracterizar el estado del tráfico bajo el cual se estiman o actualizan los tiempos de viaje. \\[0.25em]
+
+Tiempo de viaje &
+Inferencia y fusión bayesiana &
+Estimación actualizada del tiempo de viaje a partir de distintas fuentes de información. &
+Proporcionar estimaciones actualizadas de los tiempos de recorrido utilizados para construir los valores incorporados en \(T'\). \\[0.25em]
+
+Tiempo de viaje &
+Gaussian Process Regression &
+Distribución predictiva del tiempo de recorrido de un camino, incluyendo media y varianza. &
+Estimar el tiempo de recorrido entre dos nodos y proporcionar una medida explícita de incertidumbre; su incorporación a \(t_{ij}\) requeriría considerar además el tiempo de servicio conforme a la convención de Berth. \\[0.25em]
+
+Información dinámica &
+Actualización de información de tráfico &
+Cambios observados o estimados en velocidades o tiempos de viaje durante la operación. &
+Actualizar \(T'\) con información disponible durante la ejecución. \\[0.25em]
+
+Detección de interrupciones &
+Monitoreo de factibilidad de Berth &
+Identificación de futuras violaciones de ventanas de tiempo y determinación de \(t_D\). &
+Conservar el mecanismo de detección utilizando como entrada tiempos de viaje actualizados o predichos. \\[0.25em]
+
+Preferencias de stakeholders &
+Agentes simulados mediante LLM (\textit{Homo Silicus}) &
+Valoraciones de políticas condicionadas al rol y, potencialmente, al contexto. &
+Proporcionar o enriquecer las valoraciones utilizadas para construir los coeficientes \(\lambda_p\). \\
+
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\FloatBarrier
+
+\section{Caracterización inicial de los datos y requerimientos de información}
+
+Los requerimientos de información dependen del componente del sistema que se pretenda
+modelar o extender. Conviene distinguir, por una parte, los datos necesarios para
+representar la instancia y ejecutar el mecanismo de recuperación de Berth y, por otra,
+la información adicional que requerirían los modelos probabilísticos o de inteligencia
+artificial revisados en la sección anterior.
+
+\subsection{Información requerida por el esquema de referencia}
+
+El modelo de Berth requiere una representación de la red de distribución, las
+restricciones temporales de los clientes y el estado de la operación. Antes de una
+interrupción, la instancia se describe mediante los nodos correspondientes a clientes
+y depósitos, el conjunto de vehículos, la matriz \(T\) y las ventanas de tiempo
+\(TW\). En la formulación de Berth, los tiempos de servicio \(s_j\) no se modelan como
+parámetros independientes del problema de optimización, sino que se incorporan a
+los valores \(t_{ij}\) de la matriz \(T\). Durante la ejecución, el mecanismo de monitoreo requiere además conocer la solución en curso y los tiempos actualizados contenidos
+en \(T'\) \parencite{berth_thesis_2025}.
+
+Cuando se identifica una interrupción, la construcción de la instancia residual requiere
+determinar qué clientes ya fueron atendidos, cuáles permanecen pendientes, la situación
+de cada vehículo y los desplazamientos que ya no pueden modificarse. Esta información
+permite construir los conjuntos y parámetros correspondientes al estado alcanzado en
+\(t_D\) y resolver únicamente la parte pendiente de la operación
+\parencite{berth_thesis_2025}.
+
+Si se utiliza el DVRPTW, deben especificarse además los costos asociados con las
+políticas de recuperación. En la extensión transdisciplinaria, TD-DVRPTW, se requieren
+también las valoraciones de los stakeholders utilizadas para construir los coeficientes
+\(\lambda_p\).
+
+Los principales grupos de información del esquema de referencia se resumen en la
+Tabla~\ref{tab:datos_referencia}.
+
+\begin{table}[ht]
+\centering
+\small
+\caption{Información principal requerida por el esquema de referencia}
+\label{tab:datos_referencia}
+
+\renewcommand{\arraystretch}{1.15}
+
+\begin{tabularx}{\textwidth}{
+@{}
+>{\raggedright\arraybackslash}p{0.24\textwidth}
+>{\raggedright\arraybackslash}X
+@{}}
+\toprule
+\textbf{Grupo de información} &
+\textbf{Elementos principales} \\
+\midrule
+
+Instancia de ruteo &
+Clientes y depósitos; vehículos disponibles y sus nodos de origen y destino;
+ventanas de tiempo \(TW\); y matriz \(T\), cuyos elementos \(t_{ij}\) incorporan,
+conforme a la convención de Berth, el tiempo de servicio del nodo de destino. \\[0.25em]
+
+Estado de ejecución &
+Rutas en curso; clientes atendidos y pendientes; situación de los vehículos;
+desplazamientos ya iniciados; y matriz actualizada \(T'\). \\[0.25em]
+
+Recuperación &
+Costos asociados con horas extra, vehículos de respaldo, tercerización y
+flexibilización de ventanas de tiempo. \\[0.25em]
+
+Componente transdisciplinario &
+Identificación de stakeholders, valoración de las políticas de recuperación y
+coeficientes \(\lambda_p\) derivados de dichas valoraciones. \\
+
+\bottomrule
+\end{tabularx}
+\end{table}
+
+
+\subsection{Información adicional según el modelo considerado}
+
+Los modelos analizados en la Sección~4 requieren información adicional que no forma
+parte necesariamente de la formulación original de Berth. Estos requerimientos
+dependen de la función que desempeñe cada técnica y no deben interpretarse como un
+conjunto único de datos que el Proyecto deba recopilar en su totalidad.
+
+Para un GMM orientado a caracterizar condiciones de tráfico se requiere una muestra
+de observaciones que permita identificar regularidades en la distribución de las
+condiciones de viaje. En el trabajo de Mil y Piantanakulchai, estas observaciones se
+utilizan para distinguir regímenes de flujo libre, transición y congestión. El componente
+bayesiano utiliza posteriormente estimaciones de tiempo de viaje procedentes de
+distintas fuentes y considera las características de error y sesgo asociadas con cada
+una de ellas \parencite{mil_piantanakulchai_2018}.
+
+En el caso de GPR, Idé y Kato construyen el conjunto de datos mediante pares
+
+\[
+(x^{(n)},y^{(n)}),
+\]
+
+donde \(x^{(n)}\) representa el camino recorrido, expresado como una secuencia de
+segmentos de la red vial, y \(y^{(n)}\) corresponde a su tiempo total de recorrido
+observado. Para un mismo par origen--destino se requieren múltiples observaciones que
+permitan relacionar la estructura de diferentes caminos con sus tiempos de recorrido
+\parencite{ide_kato_2009}.
+
+Si se incorporara información dinámica durante la ejecución, sería necesario disponer
+de actualizaciones de velocidades o tiempos de recorrido suficientemente vinculadas
+con los caminos relevantes para la operación. Los trabajos de Fleischmann et al. y
+Gmira et al. muestran cómo este tipo de información puede alimentar un sistema de
+monitoreo y replaneación \parencite{fleischmann_gnutzmann_sandvoss_2004,
+gmira_et_al_2021}. Su obtención mediante una infraestructura de tráfico en tiempo
+real, sin embargo, no forma parte del alcance actual del Proyecto.
+
+Finalmente, una extensión de la representación de preferencias de stakeholders
+requeriría especificar los actores considerados, las políticas que deben valorar y la
+información contextual proporcionada para realizar dicha valoración. En el enfoque
+utilizado por Berth, estos elementos se incorporan mediante agentes simulados con
+LLM y posteriormente se traducen en los valores empleados para calcular
+\(\lambda_p\) \parencite{berth_thesis_2025,horton_filippas_manning_2023}.
+
+La Tabla~\ref{tab:requerimientos_modelos} sintetiza las diferencias entre estos
+requerimientos.
+
+\begin{table}[ht]
+\centering
+\small
+\caption{Requerimientos de información asociados con los modelos revisados}
+\label{tab:requerimientos_modelos}
+
+\renewcommand{\arraystretch}{1.15}
+
+\begin{tabularx}{\textwidth}{
+@{}
+>{\raggedright\arraybackslash}p{0.22\textwidth}
+>{\raggedright\arraybackslash}p{0.42\textwidth}
+>{\raggedright\arraybackslash}X
+@{}}
+\toprule
+\textbf{Modelo o mecanismo} &
+\textbf{Información requerida} &
+\textbf{Observación de alcance} \\
+\midrule
+
+GMM &
+Observaciones de condiciones o tiempos de tráfico suficientes para caracterizar
+distintos regímenes. &
+No requiere que el Proyecto implemente infraestructura propia de sensado. \\[0.25em]
+
+Inferencia y fusión bayesiana &
+Estimaciones de tiempo de viaje procedentes de distintas fuentes e información
+para caracterizar su incertidumbre, error o sesgo. &
+La disponibilidad de múltiples fuentes deberá evaluarse antes de considerar una
+implementación equivalente a la de Mil y Piantanakulchai. \\[0.25em]
+
+Gaussian Process Regression &
+Pares camino--tiempo observado; el camino debe representarse como una secuencia
+de segmentos de la red vial. &
+Para integrarlo con Berth, la predicción del tiempo de recorrido tendría que combinarse
+con el tiempo de servicio correspondiente al nodo de destino. \\[0.25em]
+
+Actualización dinámica &
+Actualizaciones de velocidades o tiempos de recorrido vinculadas con los caminos
+relevantes durante la operación. &
+Una alimentación en tiempo real constituye una posible extensión, no un requisito
+del alcance actual. \\[0.25em]
+
+Agentes simulados mediante LLM &
+Definición de roles, políticas de recuperación, contexto proporcionado al agente y
+criterio para transformar las respuestas en valoraciones. &
+Las respuestas simuladas no sustituyen la validación con stakeholders reales cuando
+ésta sea necesaria. \\
+
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{Implicaciones para el desarrollo experimental}
+
+La revisión anterior muestra que la disponibilidad de datos constituye un criterio
+central para seleccionar el componente que finalmente se desarrolle. En particular,
+reproducir el mecanismo de Berth requiere principalmente información estructurada
+sobre la instancia y su evolución, mientras que la incorporación de GMM, inferencia
+bayesiana o GPR requiere además datos con los cuales ajustar y evaluar los modelos
+correspondientes.
+
+En esta etapa no se presupone la disponibilidad de sensores propios ni de un flujo
+continuo de información de tráfico en tiempo real. Por ello, las alternativas que se
+evalúen deberán ser compatibles con las fuentes de información efectivamente
+disponibles o con escenarios simulados cuya generación pueda documentarse de forma
+reproducible.
+
+Cuando se utilicen modelos ajustados a partir de datos, deberá distinguirse la
+información utilizada para su ajuste o calibración de aquella reservada para evaluar
+su desempeño. Asimismo, cualquier transformación necesaria para convertir una
+predicción de tiempo de recorrido en los valores utilizados por \(T\) o \(T'\) deberá
+documentarse explícitamente, incluyendo la incorporación de los tiempos de servicio
+requeridos por la convención de Berth.
+
+\section{Síntesis del avance y líneas de análisis posteriores}
+
+El presente avance permitió caracterizar con mayor precisión el problema de referencia
+y reconstruir el mecanismo desarrollado por Berth y Trigos para la gestión de
+interrupciones en un VRPTW. En este enfoque, los cambios en los tiempos de viaje
+modifican las condiciones bajo las cuales se ejecuta la planeación; un procedimiento de
+monitoreo determina si dichas variaciones comprometen la factibilidad y, cuando es
+necesario, se construye una instancia residual que conserva el estado alcanzado por la
+operación y permite recalcular las rutas
+\parencite{berth_thesis_2025,berth_trigos_2025}.
+
+La revisión realizada muestra que existen distintos puntos en los que pueden incorporarse
+técnicas de inteligencia artificial o modelado probabilístico sin sustituir necesariamente
+el mecanismo de optimización y recuperación de referencia. En particular, se identificaron
+alternativas para caracterizar estados de tráfico, estimar tiempos de recorrido y su
+incertidumbre, incorporar información dinámica durante la ejecución y representar
+preferencias de stakeholders. Estas alternativas cumplen funciones diferentes y, por
+tanto, no deben interpretarse como modelos directamente intercambiables.
+
+Dentro de este panorama, la estimación de los tiempos de recorrido constituye un punto
+de integración especialmente relevante, ya que dichos valores intervienen en la
+construcción de \(T\) y \(T'\) y, en consecuencia, en el monitoreo posterior de la
+factibilidad. GMM, inferencia bayesiana y GPR ofrecen aproximaciones distintas a este
+problema: clasificación de condiciones de tráfico, actualización de estimaciones a partir
+de nueva información y obtención de distribuciones predictivas, respectivamente. De
+manera separada, los modelos de lenguaje ofrecen una posible vía para enriquecer la
+representación de las preferencias utilizadas en el componente transdisciplinario.
+
+La revisión no permite todavía justificar la selección de una única técnica para su
+implementación. La siguiente etapa deberá contrastar las alternativas identificadas
+con la información efectivamente disponible, los requerimientos de cada modelo, su
+compatibilidad con la formulación de Berth y la posibilidad de evaluar rigurosamente
+su aportación dentro del horizonte del Proyecto. En particular, será necesario definir
+qué componente se desarrollará experimentalmente y establecer cómo se comparará con
+el tratamiento utilizado en el modelo de referencia.
+
+\printbibliography
+\end{document}
