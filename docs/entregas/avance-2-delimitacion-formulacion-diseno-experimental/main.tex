@@ -1,0 +1,1186 @@
+\documentclass[11pt]{article}
+
+% -------------------------------------------------
+% Idioma y codificación
+% -------------------------------------------------
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish,mexico]{babel}
+
+% -------------------------------------------------
+% Tipografía y composición
+% -------------------------------------------------
+\usepackage{lmodern}
+\usepackage{microtype}
+\usepackage{setspace}
+
+% -------------------------------------------------
+% Márgenes
+% -------------------------------------------------
+\usepackage[
+    top=2.5cm,
+    bottom=2.5cm,
+    left=2.7cm,
+    right=2.7cm
+]{geometry}
+
+% -------------------------------------------------
+% Tablas, figuras y listas
+% -------------------------------------------------
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{graphicx}
+\usepackage{caption}
+\usepackage{enumitem}
+
+% -------------------------------------------------
+% Matemáticas
+% -------------------------------------------------
+\usepackage{amsmath}
+\usepackage{amssymb}
+
+% -------------------------------------------------
+% Referencias
+% -------------------------------------------------
+\usepackage{csquotes}
+% Referencias integradas para compilar este archivo sin .bib ni Biber.
+\usepackage[authoryear,round]{natbib}
+\setlength{\bibhang}{1.5em}
+\setlength{\bibsep}{0.6em}
+
+% -------------------------------------------------
+% Hipervínculos
+% -------------------------------------------------
+\usepackage[
+    hidelinks
+]{hyperref}
+
+% -------------------------------------------------
+% Formato general
+% -------------------------------------------------
+\setstretch{1.15}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.6em}
+
+\setlist[itemize]{
+    leftmargin=*,
+    topsep=0.3em,
+    itemsep=0.2em
+}
+
+\setlist[enumerate]{
+    leftmargin=*,
+    topsep=0.3em,
+    itemsep=0.2em
+}
+
+\usepackage{placeins}
+% -------------------------------------------------
+% Documento
+% -------------------------------------------------
+\begin{document}
+
+% -------------------------------------------------
+% Portada
+% -------------------------------------------------
+\begin{titlepage}
+    \centering
+
+    \vspace*{2.0cm}
+
+    {\large\bfseries
+    Avance 2
+    \par}
+
+    \vspace{0.6cm}
+
+    {\LARGE\bfseries
+    \parbox{0.88\textwidth}{
+        \centering
+        Delimitación técnica, formulación y diseño experimental
+        para la estimación de tiempos de viaje
+    }
+    \par}
+
+    \vspace{1.2cm}
+
+    {\large
+    \parbox{0.88\textwidth}{
+        \centering
+        Planeación inteligente de rutas ante interrupciones mediante técnicas de optimización e inteligencia artificial
+    }
+    \par}
+
+    \vspace{1.5cm}
+
+    {\large\bfseries
+    Equipo 42 -- Route Intelligence
+    \par}
+
+    \vspace{0.35cm}
+
+    {\normalsize
+    Maestría en Inteligencia Artificial Aplicada
+    \par}
+
+    \vspace{1.5cm}
+
+    {\normalsize
+    Luis Ángel Herrera Flores\\[0.25cm]
+    Francisco Natanael Ortiz Martínez\\[0.25cm]
+    Edgar Iván Rosas Gómez
+    \par}
+
+    \vspace{1.2cm}
+
+    {\normalsize
+    Asesor / Sponsor: Dr. Gerardo Jesús Camacho González
+    \par}
+
+    \vfill
+
+    {\normalsize
+    Octubre de 2026
+    \par}
+
+\end{titlepage}
+
+% -------------------------------------------------
+% Índice
+% -------------------------------------------------
+\tableofcontents
+\newpage
+
+\section{Introducción y delimitación del problema}
+
+El Proyecto Integrador aborda la planeación y replaneación de rutas ante
+interrupciones en problemas de ruteo de vehículos con ventanas de tiempo
+(VRPTW, por \textit{Vehicle Routing Problem with Time Windows}). Como modelo
+de referencia se considera el enfoque desarrollado por Berth y Trigos para el
+problema de ruteo de vehículos con ventanas de tiempo ante interrupciones
+(DVRPTW, por \textit{Disrupted Vehicle Routing Problem with Time Windows}), en
+el que los tiempos asociados con los desplazamientos entre nodos constituyen
+una entrada fundamental del modelo de optimización
+\citep{berth_trigos_2025,berth_thesis_2025}. La calidad de esta información
+resulta relevante tanto para construir la planeación inicial como para evaluar
+y, en su caso, recuperar una operación cuando las condiciones de movilidad
+cambian durante la ejecución.
+
+Dentro de esta arquitectura se distinguen dos momentos de decisión. Antes de
+iniciar la operación interesa anticipar las condiciones de movilidad esperadas
+y construir una matriz de tiempos congruente con ellas; durante la ejecución,
+una modificación no prevista puede volver subóptima o incluso inviable la
+planeación original y exigir una actualización rápida de los tiempos relevantes
+para los servicios pendientes. Esta distinción se desarrolla formalmente en la
+Sección~\ref{sec:momentos}.
+
+En el avance anterior se analizaron distintos puntos en los que técnicas de
+inteligencia artificial o modelado probabilístico podrían complementar este
+mecanismo sin sustituir necesariamente el procedimiento de optimización. La
+estimación de los tiempos de recorrido se identificó como una alternativa
+especialmente relevante, ya que permite concentrar el uso de estas técnicas en
+mejorar uno de los parámetros que inciden directamente en las decisiones de
+ruteo.
+
+Esta línea de trabajo adquiere importancia porque los tiempos de viaje en una
+red vial no son constantes. Presentan variaciones espaciales y temporales
+asociadas con los patrones de movilidad, la congestión y cambios en las
+condiciones de circulación. Una revisión sistemática reciente de la literatura
+organiza los problemas de predicción de tráfico en tareas temporales,
+espacio-temporales y origen--destino, y mantiene entre los retos centrales la
+escasez de datos y la representación de dependencias espacio-temporales
+\citep{du2025survey}. En esta línea, trabajos recientes han extendido la
+estimación hacia ubicaciones no observadas a partir de información disponible
+en otros puntos de la red \citep{lei2024conditional,zhou2025mogernn},
+mientras que otros abordan de manera explícita la predicción de tiempos
+origen--destino bajo información incompleta o dispersa
+\citep{wang2025od}.
+
+El presente avance mantiene los dos momentos como componentes centrales de la
+arquitectura general: la planeación previa del siguiente turno y la
+actualización durante la operación ante una disrupción. Para delimitar una
+primera prueba de concepto, el diseño experimental se desarrolla con mayor
+detalle para el segundo escenario, sin considerar la planeación previa como una
+aplicación secundaria. Como hipótesis de solución propuesta por el equipo, se
+estudiará si un modelo aprendido previamente a partir de información histórica
+puede utilizar un número reducido de observaciones actuales de tiempo de
+recorrido para estimar los tiempos requeridos por la replaneación. Estas
+observaciones, denominadas consultas guía dentro del diseño experimental, no
+tienen que coincidir con los clientes o depósitos de la instancia logística;
+pueden seleccionarse de forma que aporten información útil sobre diferentes
+zonas o corredores de la red.
+
+En términos generales, el problema operacional de interés puede representarse
+como
+
+\[
+K\text{ consultas actuales de tiempo de viaje}
+\longrightarrow
+\text{modelo previamente aprendido}
+\longrightarrow
+\widehat{T}^{\,\mathrm{rec}},
+\]
+
+donde \(\widehat{T}^{\,\mathrm{rec}}\) representa la matriz actualizada que
+posteriormente puede utilizarse en el mecanismo de monitoreo y recuperación.
+El propósito experimental será analizar cómo cambia la calidad de esta
+estimación conforme varían tanto el número como la selección de las consultas
+disponibles.
+
+\section{Arquitectura metodológica y punto de integración con el DVRPTW}
+\label{sec:arquitectura}
+
+\subsection{Punto de integración con el modelo de referencia}
+
+El enfoque planteado en este avance conserva como núcleo de decisión el
+modelo de optimización utilizado para la planeación y recuperación de rutas.
+La incorporación de técnicas de inteligencia artificial se sitúa
+conceptualmente en una etapa previa, orientada a mejorar la información
+temporal que posteriormente puede ser utilizada por el optimizador. De esta
+manera, la formulación matemática del VRPTW y del DVRPTW se mantiene
+inicialmente sin cambios, mientras que se define el punto de integración de
+un componente destinado a estimar los tiempos asociados con los
+desplazamientos entre los nodos de la instancia.
+
+En el modelo de referencia, la matriz
+
+\[
+T=[t_{ij}]
+\]
+
+contiene los tiempos asociados con las transiciones entre los nodos
+\(i,j\in N\). Estos valores intervienen tanto en la función objetivo como en
+las restricciones que garantizan la consistencia temporal de las rutas
+\citep{berth_thesis_2025,berth_trigos_2025}. Conforme a la convención
+utilizada por Berth, \(t_{ij}\) incorpora además el tiempo de servicio
+correspondiente al nodo de destino.
+
+Para distinguir el componente que será objeto del diseño experimental, se
+denotará mediante \(\tau_{ij}\) el tiempo requerido exclusivamente para el
+desplazamiento entre los nodos \(i\) y \(j\). Por tanto,
+
+\[
+t_{ij}=\tau_{ij}+s_j,
+\]
+
+donde \(s_j\) representa el tiempo de servicio en el nodo \(j\). Bajo esta
+notación, el componente asociado con las condiciones de movilidad es
+\(\tau_{ij}\), mientras que \(s_j\) continúa siendo un parámetro propio de la
+instancia logística.
+
+En una implementación posterior, si un método de estimación produce un valor
+\(\widehat{\tau}_{ij}\), el tiempo suministrado al modelo de optimización
+podría construirse como
+
+\[
+\widehat{t}_{ij}=\widehat{\tau}_{ij}+s_j.
+\]
+
+El conjunto de estos valores permitiría formar una matriz estimada
+\(\widehat{T}=[\widehat{t}_{ij}]\), compatible con la estructura de entrada
+del modelo de referencia. La forma en que dicha matriz se obtiene depende del
+momento de decisión considerado. En la planeación previa interesa anticipar
+las condiciones esperadas para el periodo de operación, mientras que durante
+la ejecución interesa actualizar con rapidez la información disponible ante
+cambios en las condiciones de movilidad.
+
+\subsection{Dos momentos para la estimación de tiempos de viaje}
+\label{sec:momentos}
+
+La necesidad de construir o actualizar la información temporal puede
+presentarse en dos momentos distintos del proceso de ruteo. Aunque en ambos
+casos el resultado requerido por el optimizador es una matriz compatible con
+su formulación, los horizontes de decisión y la información disponible son
+diferentes.
+
+El primer momento corresponde a la \textit{planeación previa a la operación}.
+En este caso se dispone de un horizonte de tiempo mayor antes del inicio del
+servicio y el interés consiste en anticipar las condiciones de movilidad que
+prevalecerán durante el periodo de ejecución. Para ello pueden aprovecharse
+patrones históricos, variables temporales y, cuando se encuentren disponibles,
+otras fuentes contextuales relevantes. Conceptualmente, este proceso puede
+representarse como
+
+\[
+\begin{aligned}
+\text{información histórica y contextual}
+&\longrightarrow
+\text{estimación de condiciones futuras} \\
+&\longrightarrow
+\widehat{T}^{\,\mathrm{plan}}
+\longrightarrow
+\text{VRPTW}.
+\end{aligned}
+\]
+
+La matriz \(\widehat{T}^{\,\mathrm{plan}}\) representa una estimación de los
+tiempos que podrían utilizarse para construir la planeación inicial. En este
+escenario, el problema tiene un carácter principalmente predictivo y no se
+identifica con el experimento de actualización rápida desarrollado más
+adelante.
+
+El segundo momento corresponde a la \textit{recuperación durante la
+ejecución}. En este caso ya existe una planeación, una parte de los servicios
+puede haber sido completada y una modificación inesperada de las condiciones
+de movilidad puede requerir una nueva decisión. El tiempo disponible para
+obtener información actualizada es entonces mucho menor.
+
+Para este segundo escenario se propone separar explícitamente una fase de
+aprendizaje previa y una fase de utilización durante la operación. A partir de
+una base histórica \(\mathcal{D}_{\mathrm{hist}}\) se ajustará previamente un
+modelo \(M_{\theta}\):
+
+\[
+\mathcal{D}_{\mathrm{hist}}
+\longrightarrow
+M_{\theta}.
+\]
+
+Cuando se presente una disrupción, el objetivo será utilizar únicamente un
+conjunto reducido de consultas actuales de tiempo de recorrido como nueva
+información sobre el estado de la red:
+
+\[
+\begin{aligned}
+K\text{ consultas actuales}
+&\longrightarrow
+M_{\theta} \\
+&\longrightarrow
+\widehat{T}^{\,\mathrm{rec}}
+\longrightarrow
+\text{monitoreo y recuperación}.
+\end{aligned}
+\]
+
+El histórico no se interpreta, por tanto, como una segunda fuente que deba
+consultarse exhaustivamente al momento de la disrupción; su función principal
+en este esquema es permitir que el modelo aprenda previamente relaciones
+recurrentes entre las condiciones observables y los tiempos de viaje de la
+red.
+
+En la formulación de referencia, las modificaciones de los tiempos durante la
+ejecución se representan mediante una matriz actualizada \(T'\), utilizada
+para evaluar si las rutas continúan siendo factibles y, en caso necesario,
+activar el proceso de recuperación
+\citep{berth_thesis_2025,berth_trigos_2025}. Una matriz
+\(\widehat{T}^{\,\mathrm{rec}}\) obtenida a partir de un número reducido de
+consultas actuales podría proporcionar los valores requeridos por este
+mecanismo sin necesidad de consultar individualmente todos los pares de la
+instancia residual.
+
+Los dos escenarios comparten la necesidad de transformar información sobre
+movilidad en tiempos utilizables por el optimizador, pero no constituyen el
+mismo problema. La planeación requiere anticipar condiciones futuras; la
+recuperación requiere actualizar rápidamente la representación de las
+condiciones presentes. Ambos forman parte del problema central del Proyecto.
+Para mantener acotada la primera validación experimental, este avance desarrolla
+con mayor detalle el segundo escenario, mientras que la estimación anticipada
+para el siguiente turno se conserva como parte de la misma arquitectura y
+deberá evaluarse en las etapas posteriores.
+
+\section{Datos y entorno experimental}
+
+\subsection{Origen de los datos y selección del conjunto experimental}
+
+El estudio del problema planteado requiere disponer de una base histórica
+suficientemente amplia para caracterizar la variación temporal y espacial de
+las condiciones de movilidad. En una aplicación empresarial, esta información
+podría provenir de registros acumulados durante la operación de una flota o de
+servicios externos de información vial. Sin embargo, para construir un
+experimento reproducible y evaluar inicialmente la viabilidad del enfoque se
+consideraron conjuntos de datos públicos de tráfico con observaciones
+repetidas sobre una misma red.
+
+Una de las principales fuentes disponibles para este tipo de información es
+el \textit{Performance Measurement System} (PeMS) del California Department of
+Transportation (Caltrans). El sistema integra datos de detectores distribuidos
+en la red de autopistas de California y conserva información histórica para su
+análisis \citep{caltrans_pems}.
+
+Para este proyecto se revisaron dos conjuntos utilizados como referencia en
+investigaciones sobre predicción espacio-temporal de tráfico: PEMS-BAY y
+METR-LA \citep{li2018dcrnn}. PEMS-BAY corresponde a una selección de
+sensores ubicados en el área de la Bahía de San Francisco y se deriva de la
+infraestructura PeMS. METR-LA constituye un conjunto de referencia diferente,
+con mediciones de sensores del área de Los Ángeles. Ambos fueron utilizados
+por Li et al. en el trabajo que introdujo la \textit{Diffusion Convolutional
+Recurrent Neural Network} (DCRNN), un modelo de aprendizaje profundo para
+predicción espacio-temporal de tráfico.
+
+La variable principal disponible en estos conjuntos es la velocidad del
+tráfico registrada en cada sensor a intervalos regulares de cinco minutos.
+Por tanto, los datos no describen directamente viajes de vehículos de reparto
+ni tiempos entre clientes. Su utilidad para este proyecto radica en que
+proporcionan observaciones simultáneas y repetidas de diferentes puntos de
+una red durante periodos prolongados, lo que permite caracterizar patrones
+históricos y construir escenarios controlados de evaluación.
+
+La versión de PEMS-BAY analizada contiene información de 325 sensores y
+52\,116 instantes de observación correspondientes al primer semestre de 2017,
+con una frecuencia nominal de cinco minutos. Cada registro puede representarse
+como un vector de velocidades
+
+\[
+\mathbf{x}_t=
+\begin{bmatrix}
+v_1(t) & v_2(t) & \cdots & v_{325}(t)
+\end{bmatrix}^{\mathsf T},
+\]
+
+de modo que el conjunto completo forma una serie temporal multivariada que
+describe cómo evolucionan simultáneamente las velocidades observadas en
+distintos puntos de la red.
+
+Además de las series temporales de velocidad, la distribución utilizada
+dispone de información complementaria para identificar los sensores y
+representar relaciones espaciales entre ellos, incluyendo sus ubicaciones y
+distancias. Esta información resulta relevante para el proyecto porque
+permite vincular las observaciones temporales con una representación espacial
+de la red y proporciona los elementos necesarios para construir el entorno
+experimental descrito en la sección siguiente.
+
+Como alternativa se examinó también METR-LA. Este conjunto contiene
+información de 207 sensores, igualmente registrada con una frecuencia de
+cinco minutos. La inspección preliminar de los archivos mostró una presencia
+considerablemente mayor de valores iguales a cero y periodos prolongados de
+indisponibilidad. En PEMS-BAY estos casos son sustancialmente menos frecuentes.
+Por esta razón, PEMS-BAY se seleccionó como conjunto principal para la primera
+etapa experimental, mientras que METR-LA se conserva como una posible fuente
+para evaluar posteriormente la robustez de los métodos frente a información
+incompleta.
+
+\subsection{Función de PEMS-BAY dentro del experimento}
+
+Aunque PEMS-BAY proporciona una descripción espacio-temporal rica de las
+condiciones de tráfico, su estructura no coincide directamente con la
+información requerida por una instancia de ruteo. Las observaciones
+corresponden a velocidades registradas en sensores, mientras que el VRPTW y
+el DVRPTW requieren tiempos de desplazamiento entre los nodos logísticos de
+la instancia. Por ello, el conjunto de datos se utilizará como laboratorio
+para construir y evaluar el mecanismo de estimación propuesto.
+
+En un instante \(t\), el estado observado puede representarse mediante el
+vector
+
+\[
+\mathbf{x}_t=
+\begin{bmatrix}
+v_1(t) & v_2(t) & \cdots & v_{n_s}(t)
+\end{bmatrix}^{\mathsf T},
+\]
+
+donde \(v_r(t)\) representa la velocidad registrada por el sensor \(r\) y
+\(n_s\) corresponde al número de sensores considerados. La secuencia histórica
+de estos vectores constituye la base para construir, mediante el procedimiento
+definido en la Sección~\ref{sec:tiempos}, series de tiempos de desplazamiento de referencia y
+observaciones históricas derivadas. Estas relaciones podrán utilizarse
+posteriormente para ajustar o calibrar el modelo \(M_{\theta}\), sin requerir
+que su formulación opere directamente sobre las velocidades de los sensores.
+
+PEMS-BAY cumple además una segunda función: para cada instante de evaluación,
+la disponibilidad simultánea de un conjunto amplio de mediciones permite
+construir una referencia experimental de las condiciones de movilidad y de
+los tiempos de desplazamiento derivados de ellas. Esta referencia se
+utilizará exclusivamente para evaluar las estimaciones producidas por el
+modelo.
+
+Finalmente, el conjunto de datos permitirá simular el escenario de acceso
+limitado a información actual. Una vez construida la referencia completa para
+un instante \(t\), se seleccionará un número reducido de pares de puntos y se
+calcularán únicamente sus tiempos de recorrido como si correspondieran a las
+pocas consultas que podrían realizarse durante una disrupción. El modelo
+recibirá estas consultas como información actual, mientras que el resto de la
+referencia permanecerá oculto para fines de estimación.
+
+De esta manera, PEMS-BAY desempeña tres funciones diferenciadas dentro del
+experimento: proporciona la base histórica a partir de la cual se construirán
+las observaciones utilizadas para el aprendizaje previo, permite obtener una
+referencia controlada para evaluar los resultados y hace posible simular un
+número limitado de consultas actuales sin depender, en esta etapa, de un
+servicio externo en tiempo real.
+
+La referencia construida a partir de PEMS-BAY se utilizará como una
+\textit{referencia experimental derivada} y no como una observación directa de
+los tiempos origen--destino reales de vehículos en la red vial. Sus valores se
+obtienen a partir de las mediciones disponibles y de las hipótesis utilizadas
+para transformar velocidades y relaciones espaciales en tiempos de
+desplazamiento. Por tanto, su función es proporcionar un entorno controlado y
+reproducible para comparar estimaciones, no representar una ``verdad física''
+exacta de todos los tiempos de recorrido.
+
+Finalmente, en esta etapa se parte del supuesto de que existe una base
+histórica suficientemente amplia para caracterizar los patrones de movilidad
+de la red. La construcción progresiva de dicha base a partir de la operación
+cotidiana de una flota, así como su validación con información proveniente de
+una empresa real, se consideran extensiones posteriores del proyecto.
+
+
+\subsection{Criterios de preparación e ingeniería de características}
+\label{sec:preparacion}
+
+En el contexto de CRISP-ML, la preparación de los datos debe distinguir las
+características de entrada de los tiempos objetivo que se desea estimar. Las
+consultas guía constituyen información observable durante la operación,
+mientras que los tiempos de referencia de los pares logísticos se reservan
+como objetivos de aprendizaje o evaluación. Estos últimos no deberán
+incorporarse como entradas actuales del estimador.
+
+Como complemento del diseño experimental, se proponen las siguientes
+características candidatas. Su inclusión definitiva deberá justificarse con
+pruebas sobre los periodos de entrenamiento y validación; esta propuesta no
+constituye evidencia de transformaciones ya ejecutadas.
+
+\begin{table}[ht]
+\centering
+\small
+\caption{Características candidatas para el componente de estimación}
+\label{tab:caracteristicas}
+\renewcommand{\arraystretch}{1.15}
+\begin{tabularx}{\textwidth}{@{}p{0.23\textwidth}X X@{}}
+\toprule
+\textbf{Característica} & \textbf{Construcción} & \textbf{Justificación} \\
+\midrule
+Tiempo consultado & \(q_k(t)\), expresado en una unidad temporal común. &
+Representa la información actual disponible para cada par guía. \\
+Desviación histórica & \(q_k(t)-b_k(h(t))\), donde \(b_k\) es la mediana
+histórica de la consulta para una franja horaria comparable. &
+Distingue el cambio actual del patrón recurrente del recorrido. \\
+Razón respecto al histórico & \(q_k(t)/b_k(h(t))\), únicamente cuando la
+referencia histórica sea positiva y válida. &
+Permite comparar cambios relativos entre recorridos de distinta duración. \\
+Hora cíclica & \(\sin(2\pi h(t)/24)\) y \(\cos(2\pi h(t)/24)\), con
+\(h(t)\) expresada en horas. &
+Representa la continuidad entre el final y el inicio del día sin imponer un
+salto artificial entre las 23:59 y las 00:00 horas. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+\FloatBarrier
+
+Las referencias históricas \(b_k\) se calcularán exclusivamente con datos de
+entrenamiento. Antes de construir los tiempos se documentarán los valores
+faltantes, las velocidades cero y las observaciones no válidas; no se
+interpretará automáticamente un cero como dato ausente ni se calculará
+\(d_e/v_e(t)\) con un denominador nulo. La regla de tratamiento y su impacto
+sobre los registros disponibles deberán quedar registrados.
+
+Para métodos sensibles a la escala se evaluará la estandarización de las
+características mediante \(z=(x-\mu_{\mathrm{train}})/\sigma_{\mathrm{train}}\).
+Las variables con varianza nula se tratarán antes de esta operación. La
+transformación logarítmica se considerará únicamente para variables positivas
+cuando su distribución y las pruebas de validación la justifiquen; no se
+presupondrá que todas las entradas deban seguir una distribución normal. Las
+estadísticas y transformaciones ajustadas en entrenamiento se conservarán
+para validación, prueba y utilización posterior.
+
+La selección considerará filtros de varianza y correlación para detectar
+características poco variables o redundantes. Sus umbrales deberán
+justificarse con los resultados de validación. Como alternativa de extracción
+se evaluará PCA sobre las entradas estandarizadas, ajustado únicamente con
+entrenamiento; el número de componentes deberá fundamentarse en la varianza
+explicada y en la calidad de estimación. Se registrarán las dimensiones antes
+y después, así como el efecto sobre el tiempo de procesamiento. La selección
+espacial de consultas complementa estas pruebas, pero no sustituye el análisis
+de las características construidas.
+
+\section{Formulación del entorno experimental y actualización mediante consultas guía}
+\label{sec:entorno}
+
+\subsection{Construcción de los tiempos de referencia}
+\label{sec:tiempos}
+
+Para relacionar las observaciones de PEMS-BAY con el problema de estimación
+de tiempos de viaje, se propone representar el entorno experimental mediante
+un grafo
+
+\[
+G=(V,E),
+\]
+
+donde \(V\) contiene los puntos utilizados para representar espacialmente la
+red y \(E\) las relaciones consideradas entre ellos. Esta representación se
+utiliza con fines experimentales y no implica que cada relación de los
+archivos complementarios de PEMS-BAY deba interpretarse necesariamente como
+un tramo vial físico directo.
+
+Para cada conexión \(e\in E\) se asociará una distancia \(d_e\) y se definirá
+una velocidad \(v_e(t)\) a partir de las mediciones disponibles en el instante
+\(t\). A partir de estos valores se obtendrá un peso temporal para la
+conexión,
+
+\[
+w_e(t)=\frac{d_e}{v_e(t)},
+\]
+
+una vez expresadas ambas variables en unidades compatibles. La regla
+específica para asignar una velocidad a cada conexión deberá establecerse y
+documentarse como una hipótesis del diseño experimental, ya que PEMS-BAY
+proporciona mediciones en sensores y no tiempos de recorrido directamente
+asociados con todas las conexiones de una red vial.
+
+Sean \(a,b\in V\) dos puntos de la red experimental y
+\(\mathcal{P}_{ab}\) el conjunto de caminos factibles que los conectan. El
+tiempo de desplazamiento de referencia entre ambos se definirá mediante el
+camino de menor tiempo,
+
+\[
+\tau_{ab}^{\mathrm{ref}}(t)
+=
+\min_{p\in\mathcal{P}_{ab}}
+\sum_{e\in p} w_e(t).
+\]
+
+Esta formulación permite abstraer los nodos y conexiones intermedios utilizados
+para construir cada tiempo origen--destino. El recorrido interno puede cambiar
+entre distintos instantes conforme cambien los pesos temporales de las
+conexiones, pero para las etapas posteriores el resultado relevante es el
+tiempo agregado \(\tau_{ab}^{\mathrm{ref}}(t)\).
+
+Dentro de \(V\) se definirá un subconjunto \(C\subseteq V\) correspondiente a
+los nodos logísticos para los que el modelo de optimización requiere tiempos
+de desplazamiento. Para estos pares, los valores
+
+\[
+\left\{
+\tau_{ij}^{\mathrm{ref}}(t)
+\right\}_{i,j\in C}
+\]
+
+constituyen la referencia contra la cual se evaluarán posteriormente las
+estimaciones \(\widehat{\tau}_{ij}(t)\). La construcción de tiempos para pares
+de puntos que no pertenecen a \(C\) se conserva porque dichos pares pueden
+utilizarse como consultas guía para obtener información sobre el estado actual
+de la red.
+
+Para una primera implementación se considerará que los pesos temporales
+\(w_e(t)\) permanecen aproximadamente constantes dentro de cada intervalo de
+cinco minutos del conjunto de datos. Bajo este supuesto, todos los pesos
+utilizados para calcular un camino corresponden al mismo estado temporal de
+la red. Una extensión posterior podría considerar un problema de camino
+mínimo dependiente del tiempo, en el que el costo de cada conexión se evalúe
+de acuerdo con el instante en que el vehículo ingresa a ella.
+
+\subsection{Consultas guía como observaciones del estado actual}
+
+Como hipótesis de solución propuesta por el equipo, el mecanismo de
+actualización investigará bajo qué condiciones un número reducido de consultas
+actuales permite estimar los tiempos de viaje de los pares logísticos no
+observados con precisión suficiente para la replaneación. Esta formulación no
+se asume como requisito del modelo de referencia, sino como una alternativa
+para reducir la cantidad de información actual que tendría que obtenerse antes
+de reconstruir la matriz requerida por el optimizador. Se plantea seleccionar
+previamente los pares consultados por su capacidad potencial para aportar
+información sobre diferentes zonas o corredores de la red. Esta capacidad
+deberá comprobarse experimentalmente, especialmente ante cambios localizados
+que las consultas podrían no detectar.
+
+Sea
+
+\[
+\mathcal{Q}_K=
+\left\{
+(a_k,b_k)
+\right\}_{k=1}^{K}
+\]
+
+el conjunto de \(K\) consultas guía. Los extremos \(a_k,b_k\in V\) no tienen
+que pertenecer al conjunto de nodos logísticos \(C\). Para cada consulta, la
+información disponible durante la operación consiste únicamente en el tiempo
+de recorrido observado o consultado entre ambos puntos,
+
+\[
+q_k(t)=\tau_{a_kb_k}(t).
+\]
+
+En el entorno experimental con PEMS-BAY, cada valor \(q_k(t)\) se simulará
+mediante el tiempo de referencia correspondiente
+\(\tau_{a_kb_k}^{\mathrm{ref}}(t)\), calculado a partir del estado completo del
+instante de evaluación. Esta equivalencia se utiliza únicamente para construir
+un escenario controlado en el que el modelo observa las consultas seleccionadas
+mientras los tiempos objetivo permanecen ocultos.
+
+En una aplicación real, estos valores podrían obtenerse mediante un servicio
+externo de mapas e información de tráfico, como Google Maps, o a partir de
+otras fuentes operativas. El método propuesto no requiere conocer
+explícitamente la secuencia de calles o conexiones utilizada por el servicio
+para producir cada tiempo: la observación se trata como un tiempo agregado
+entre dos puntos conocidos.
+
+Las consultas guía pueden interpretarse conceptualmente como \textit{sensores
+virtuales agregados}: cada una resume en un único tiempo de viaje las
+condiciones de movilidad que afectan un recorrido de la red. Esta expresión se
+utiliza únicamente como una analogía conceptual; en el documento se mantiene
+el término \textit{consulta guía} para evitar confundirlas con sensores físicos
+o con una categoría establecida de la literatura.
+
+El modelo \(M_{\theta}\), ajustado previamente con información histórica,
+recibirá durante la operación el conjunto de observaciones actuales
+
+\[
+\mathbf{q}_t=
+\begin{bmatrix}
+q_1(t) & q_2(t) & \cdots & q_K(t)
+\end{bmatrix}^{\mathsf T}
+\]
+
+y producirá estimaciones de los tiempos de desplazamiento requeridos entre los
+nodos logísticos,
+
+\[
+\left\{
+\widehat{\tau}_{ij}(t)
+\right\}_{i,j\in C}.
+\]
+
+Por tanto, el problema de recuperación estudiado experimentalmente puede
+representarse como
+
+\[
+\mathbf{q}_t
+\xrightarrow{\;M_{\theta}\;}
+\left\{
+\widehat{\tau}_{ij}(t)
+\right\}_{i,j\in C},
+\]
+
+donde el conocimiento histórico necesario para establecer las relaciones
+entre distintas condiciones de movilidad se encuentra incorporado previamente
+en los parámetros del modelo.
+
+Esta formulación conserva la separación entre la capa de movilidad y el modelo
+de optimización. Una vez obtenidos los valores
+\(\widehat{\tau}_{ij}(t)\), la incorporación de los tiempos de servicio
+\(s_j\) y la construcción de \(\widehat{T}^{\,\mathrm{rec}}\) se realizará de
+acuerdo con la relación establecida en la Sección~\ref{sec:arquitectura}.
+
+\subsection{Diseño de escenarios y selección de consultas}
+\label{sec:escenarios}
+
+El diseño experimental estudiará dos dimensiones relacionadas: cuántas
+consultas actuales se requieren y qué pares conviene consultar. Para un mismo
+instante de referencia se evaluarán distintos valores de \(K\), manteniendo
+ocultos para el modelo los tiempos correspondientes a los pares logísticos
+que se desea estimar.
+
+En una primera etapa, la selección de consultas deberá permitir comparar el
+valor de una cobertura deliberada de la red frente a una selección sin
+criterio informativo. Por ello se considerará al menos una estrategia de
+referencia basada en selección aleatoria y una estrategia estructurada que
+busque distribuir las consultas entre distintas zonas o corredores y reducir
+la redundancia espacial. El objetivo inicial no es resolver un problema
+óptimo de localización de consultas, sino comprobar si la elección de los
+pares observados modifica de manera material la calidad de la estimación.
+
+De forma esquemática, la pregunta experimental puede expresarse como
+
+\[
+(K,\,\mathcal{Q}_K)
+\longrightarrow
+\text{calidad de}
+\left\{
+\widehat{\tau}_{ij}(t)
+\right\}_{i,j\in C}.
+\]
+
+En una extensión posterior, la selección de consultas podría formalizarse
+mediante criterios de información, cobertura u observabilidad, de modo que un
+número reducido de observaciones proporcione la mayor cantidad posible de
+información sobre el estado relevante de la red. Esta extensión no se
+considera un requisito para la primera prueba de concepto.
+
+Para cada instante de evaluación, PEMS-BAY permitirá construir tanto los
+tiempos de referencia de los pares logísticos como los valores que simulan
+las consultas guía. Al modelo se entregarán únicamente estas últimas, mientras
+que los valores de referencia se conservarán para medir el error de las
+estimaciones. La comparación se repetirá sobre múltiples instantes y
+condiciones de circulación con el fin de evitar que los resultados dependan
+de un único estado de la red.
+
+\section{Compatibilidad metodológica y criterios de evaluación}
+
+La estimación y predicción de información de tráfico comprende tareas con
+funciones diferentes dentro de un sistema de movilidad. Una revisión
+sistemática reciente distingue, entre otras, la predicción de series
+temporales, la predicción espacio-temporal y los problemas origen--destino
+\citep{du2025survey}. Esta clasificación resulta útil para el presente
+proyecto porque algunos enfoques buscan anticipar condiciones futuras, otros
+estiman condiciones actuales utilizando información parcial y otros producen
+tiempos o variables asociadas con pares origen--destino. Estas funciones son
+complementarias, pero requieren información distinta y no deben considerarse
+intercambiables.
+
+Conforme a la delimitación establecida en la Sección~\ref{sec:momentos}, el
+Proyecto considera como centrales tanto la estimación anticipada para la
+planeación previa como la actualización rápida durante la operación. En esta
+primera validación, el análisis metodológico se desarrolla con mayor detalle
+para el segundo escenario. En este contexto, la compatibilidad de una
+alternativa depende de su capacidad para aprovechar información histórica,
+incorporar observaciones actuales parciales y producir, directa o
+indirectamente, estimaciones de los tiempos requeridos entre los nodos
+logísticos. De acuerdo con la formulación
+de la Sección~\ref{sec:entorno}, la transformación de interés conserva la forma
+
+\[
+\mathbf{q}_t
+\xrightarrow{\;M_{\theta}\;}
+\left\{
+\widehat{\tau}_{ij}(t)
+\right\}_{i,j\in C}.
+\]
+
+
+\subsection{Compatibilidad de enfoques con la actualización rápida}
+
+Entre los antecedentes relacionados con esta formulación se encuentran los
+modelos multivariados que explotan dependencias espacio-temporales aprendidas
+a partir de información histórica. Jenelius y Koutsopoulos proponen un modelo
+basado en \textit{Probabilistic Principal Component Analysis} (PPCA) que
+representa correlaciones entre tiempos de viaje de una red y permite realizar
+predicciones condicionadas a observaciones recientes aun cuando parte de la
+información se encuentra ausente \citep{jenelius2018urban}. Cebecauer,
+Jenelius y Burghout desarrollan posteriormente un marco de predicción de red
+orientado al uso de datos de vehículos sonda escasos y valores faltantes,
+combinando PPCA con información local
+\citep{cebecauer2018integrated}.
+
+La relevancia de estos trabajos para el problema planteado radica en que
+muestran que las condiciones observadas en diferentes partes de una red pueden
+presentar una estructura conjunta aprovechable para inferir información no
+observada directamente. Sin embargo, sus formulaciones originales no utilizan
+el mismo tipo de consultas origen--destino agregadas definidas en este
+proyecto. Por tanto, su aplicación al esquema de consultas guía requeriría una
+adaptación y una validación experimental; los resultados reportados en dichos
+trabajos no permiten concluir por sí mismos cuántas consultas serían
+suficientes ni cuáles deberían seleccionarse.
+
+Investigaciones más recientes muestran que la inferencia a partir de cobertura
+parcial de una red continúa siendo un problema activo. Lei, Xu y Wang proponen
+un modelo probabilístico de difusión condicionada para estimar estados de
+tráfico en ubicaciones sin sensores a partir de las dependencias
+espacio-temporales con ubicaciones observadas \citep{lei2024conditional}.
+Por su parte, Zhou et al. desarrollan un modelo inductivo basado en grafos para
+predecir estados en ubicaciones no observadas y analizan su desempeño bajo
+distintos niveles de disponibilidad de sensores \citep{zhou2025mogernn}.
+Estos enfoques constituyen evidencia contemporánea de que observaciones
+parciales pueden contener información útil sobre zonas no observadas, aunque
+trabajan con estados asociados con nodos de una red explícita y no con el
+esquema de consultas agregadas planteado aquí.
+
+Otros enfoques probabilísticos proporcionan antecedentes complementarios.
+Hofleitner et al. utilizan una red bayesiana dinámica para representar
+dependencias espacio-temporales y actualizar la estimación de las condiciones
+de tráfico a partir de observaciones dispersas de vehículos sonda
+\citep{hofleitner2012learning}. Este esquema resulta conceptualmente
+compatible con la combinación de conocimiento histórico y evidencia actual,
+aunque su formulación mantiene estados asociados con los enlaces de la red y
+requiere un procedimiento de inferencia más complejo que la representación
+agregada utilizada en este avance.
+
+Zhan et al. estudian un problema distinto pero especialmente relacionado con
+la disponibilidad de información parcial. Su modelo estima tiempos medios de
+enlaces utilizando datos de viajes que contienen origen, destino, duración y
+distancia, sin observar directamente la trayectoria seguida; los caminos se
+tratan como variables latentes dentro de un modelo de mezcla bayesiano
+\citep{zhan2016bayesian}. Este antecedente muestra que observaciones
+agregadas de viajes pueden aportar información sobre condiciones no observadas
+directamente en la red, aunque su metodología requiere inferencia de caminos y
+un volumen de observaciones distinto del escenario de pocas consultas
+considerado aquí.
+
+Un trabajo reciente se aproxima al problema desde la predicción directa del
+tiempo origen--destino. Wang et al. combinan reconstrucción de datos faltantes,
+representación adaptativa del grafo y modelado temporal para estimar tiempos OD
+en presencia de información vial dispersa \citep{wang2025od}. Aunque su
+objetivo de salida es cercano al de este proyecto, el método requiere una
+representación más rica de la red y no aborda específicamente la reconstrucción
+de una matriz a partir de un número reducido de consultas actuales.
+
+También resulta relevante la cuestión del costo de adquirir tiempos OD desde
+servicios externos. Shah y Piantanakulchai estudian un esquema de aprendizaje
+activo que selecciona de manera iterativa qué tiempos consultar a una API para
+construir un conjunto de entrenamiento con menor esfuerzo de etiquetado
+\citep{shah2026active}. Esta propuesta respalda la utilidad de seleccionar
+consultas cuando obtener una matriz completa es costoso, pero difiere del
+problema operacional considerado aquí: en ese trabajo las consultas se utilizan
+para incorporar nuevas etiquetas y reentrenar el modelo, mientras que en el
+presente diseño las consultas se obtienen después del entrenamiento y se usan
+como evidencia actual para producir \(
+\widehat{T}^{\,\mathrm{rec}}
+\) sin reentrenamiento en el momento de la disrupción.
+
+También existen métodos cuya función se encuentra en otras etapas del proceso.
+Modelos espacio-temporales sobre grafos, como DCRNN, están orientados
+principalmente a predecir la evolución futura de variables de tráfico a partir
+de series históricas distribuidas sobre una red
+\citep{li2018dcrnn}. Por ello, resultan más directamente relacionados con
+el problema de planeación previa que con la actualización mediante unas pocas
+consultas actuales. En sentido diferente, Gentile et al. estudian la
+generación eficiente de tiempos punto a punto cuando la información dinámica
+de la red ya se encuentra disponible \citep{gentile2020fast}. Su propuesta
+es, por tanto, complementaria a la estimación del estado actual, pero no
+sustituye el mecanismo que debe inferir información a partir de observaciones
+limitadas.
+
+En conjunto, estos antecedentes respaldan la viabilidad de aprovechar
+dependencias históricas y observaciones parciales para estimar información de
+movilidad, pero también muestran que las alternativas disponibles resuelven
+subproblemas diferentes. En esta etapa no se selecciona un método definitivo.
+La comparación e implementación de modelos candidatos deberá realizarse
+posteriormente sobre la formulación y los escenarios definidos en este
+avance, manteniendo como requisito que la información nueva necesaria durante
+la recuperación se limite al conjunto de consultas actuales disponible.
+
+
+\subsection{Criterios de evaluación del componente de estimación}
+
+La evaluación del mecanismo propuesto debe determinar si las estimaciones
+obtenidas a partir de un conjunto reducido de consultas representan con
+suficiente precisión los tiempos de desplazamiento que permanecerían ocultos
+para el modelo. Para ello, los valores estimados se compararán con los tiempos
+de referencia construidos mediante el procedimiento de la Sección~\ref{sec:entorno}.
+
+Sea \(\mathcal{T}_{\mathrm{test}}\) el conjunto de instantes reservados para
+evaluación. Para evitar que los resultados reflejen información utilizada
+durante el ajuste del modelo, los periodos destinados a entrenamiento y prueba
+deberán mantenerse separados respetando el orden temporal de los datos. En la
+primera evaluación se considerará la matriz completa de pares ordenados de
+nodos \(i,j\in C\), con \(i\neq j\). Bajo este criterio, el error absoluto
+medio de los tiempos de desplazamiento podrá calcularse como
+
+\[
+\mathrm{MAE}_{\tau}
+=
+\frac{1}
+{|\mathcal{T}_{\mathrm{test}}|\,|C|(|C|-1)}
+\sum_{t\in\mathcal{T}_{\mathrm{test}}}
+\sum_{\substack{i,j\in C\\ i\neq j}}
+\left|
+\widehat{\tau}_{ij}(t)
+-
+\tau_{ij}^{\mathrm{ref}}(t)
+\right|.
+\]
+
+De manera complementaria se utilizará la raíz del error cuadrático medio,
+
+\[
+\mathrm{RMSE}_{\tau}
+=
+\sqrt{
+\frac{1}
+{|\mathcal{T}_{\mathrm{test}}|\,|C|(|C|-1)}
+\sum_{t\in\mathcal{T}_{\mathrm{test}}}
+\sum_{\substack{i,j\in C\\ i\neq j}}
+\left(
+\widehat{\tau}_{ij}(t)
+-
+\tau_{ij}^{\mathrm{ref}}(t)
+\right)^2
+}.
+\]
+
+El MAE permitirá interpretar directamente la magnitud promedio de los errores
+en unidades de tiempo, mientras que el RMSE otorgará mayor peso a errores de
+gran magnitud que podrían resultar especialmente relevantes para una decisión
+de replaneación. Las métricas se aplicarán sobre los tiempos de desplazamiento
+\(\tau_{ij}\), ya que los tiempos de servicio \(s_j\) permanecen como
+parámetros de la instancia logística y se incorporan posteriormente al
+construir \(\widehat{T}^{\,\mathrm{rec}}\).
+
+El número de consultas \(K\) no se considerará una métrica de error, sino una
+variable del diseño experimental. Para cada alternativa se analizará cómo
+cambia la precisión al modificar \(K\) y la composición de
+\(\mathcal{Q}_K\). Esto permitirá estudiar por separado el efecto de disponer
+de más observaciones y el efecto de seleccionar pares potencialmente más
+informativos. Conforme al diseño establecido en la Sección~\ref{sec:escenarios}, las
+comparaciones deberán realizarse sobre los mismos instantes y tiempos objetivo
+para evitar que diferencias en las condiciones de circulación se confundan
+con diferencias atribuibles a las consultas seleccionadas.
+
+Además de la precisión, se registrará el tiempo requerido por el modelo para
+producir las estimaciones una vez disponibles las consultas guía. Este tiempo
+corresponde a la etapa de inferencia y debe distinguirse del tiempo que, en una
+aplicación real, pudiera requerir la obtención de información desde un
+servicio externo. El entorno experimental con PEMS-BAY permite controlar el
+primero y estudiar el efecto de \(K\), pero no pretende reproducir la latencia
+de una plataforma comercial de información vial.
+
+Para determinar si las observaciones actuales aportan información adicional
+respecto de los patrones recurrentes de la red, los resultados se
+compararán también con una referencia histórica sencilla construida sin
+utilizar las consultas del instante de evaluación, por ejemplo mediante
+valores característicos para periodos temporales comparables. Esta referencia
+permitirá distinguir la mejora atribuible a la incorporación de información
+actual de aquella que podría obtenerse únicamente a partir del comportamiento
+histórico. Esta comparación incluirá el caso sin consultas actuales
+(\(K=0\)). La elección de características, transformaciones y parámetros
+utilizará un periodo de validación separado del conjunto final de prueba.
+Para cada combinación de \(K\) y \(\mathcal{Q}_K\), se documentará qué
+entradas recibe el modelo y si requiere un ajuste independiente; los pares
+consultados deberán conservar una identidad y un orden explícitos.
+
+La evaluación se repetirá sobre múltiples instantes y condiciones de
+circulación. Por tanto, además de los valores agregados de MAE y RMSE, deberá
+examinarse la dispersión de los errores para identificar si el desempeño se
+mantiene estable o se deteriora en determinados estados de la red. En esta
+etapa el objetivo es caracterizar el desempeño del componente de estimación,
+no determinar todavía el efecto final sobre las rutas generadas por el
+DVRPTW.
+
+La evaluación operacional completa corresponderá a la integración posterior
+con el modelo de optimización. En esa etapa podrán analizarse, entre otros
+aspectos, la factibilidad de las rutas, la calidad de la solución, el costo
+resultante y el tiempo total de respuesta. Mantener separados ambos niveles de
+evaluación permitirá determinar primero si el mecanismo de consultas guía
+produce una representación suficientemente precisa y rápida de los tiempos de
+viaje y, posteriormente, si dicha representación se traduce en mejores
+decisiones de planeación o replaneación.
+
+La mejora predictiva no se interpretará por sí sola como una mejora integral
+del sistema. Una vez incorporadas las estimaciones al modelo de ruteo, la
+evaluación deberá considerar también efectos sobre los actores involucrados y
+sobre criterios transdisciplinarios relevantes, tales como cumplimiento de
+ventanas de servicio, tiempo de operación de los conductores, utilización de
+recursos, costos y estabilidad de la operación. De esta forma, las métricas de
+error de la capa de estimación y las métricas operacionales del modelo de ruteo
+se mantendrán diferenciadas, pero vinculadas dentro de la evaluación final.
+
+\section{Alcance del avance y etapas posteriores}
+
+El presente avance deja establecida la formulación necesaria para estudiar la
+actualización de los tiempos de viaje utilizados por el modelo de ruteo. Se
+definieron el punto de integración con el VRPTW/DVRPTW de referencia, el papel
+de PEMS-BAY como entorno experimental, la construcción de tiempos de
+referencia, el esquema de consultas guía y los criterios con los que podrá
+evaluarse posteriormente la precisión y rapidez del componente de estimación.
+
+El alcance actual no comprende todavía la selección definitiva ni la
+implementación comparativa de un modelo de inteligencia artificial, ni la
+evaluación de su efecto sobre las rutas generadas por el optimizador. La
+revisión metodológica permite identificar enfoques compatibles con la
+formulación propuesta, pero su implementación y comparación experimental
+corresponderán a etapas posteriores del proyecto.
+
+En los siguientes avances se implementará o reproducirá primero el método de
+referencia para la optimización y recuperación de rutas. Posteriormente podrán
+implementarse y compararse alternativas para la estimación de tiempos de viaje
+utilizando los escenarios y métricas definidos en este documento. Una vez
+seleccionada una alternativa suficientemente precisa y rápida, sus estimaciones
+\(\widehat{\tau}_{ij}(t)\) podrán incorporarse a
+\(\widehat{T}^{\,\mathrm{rec}}\) para analizar su efecto sobre la factibilidad,
+calidad y tiempo de respuesta del proceso de replaneación.
+
+La predicción de condiciones futuras para la planeación previa permanece como
+uno de los dos componentes centrales de la arquitectura propuesta, aunque su
+validación experimental detallada se desarrollará en una etapa posterior a la
+primera prueba de concepto enfocada en actualización rápida. Asimismo, la
+incorporación de eventos contextuales mediante representaciones semánticas, la
+validación con información operativa de una empresa, la utilización de
+servicios externos de tráfico en tiempo real y el desarrollo de estrategias
+más avanzadas para seleccionar las consultas guía se consideran extensiones
+posteriores de la implementación experimental.
+
+\subsection{Conclusión de preparación de datos en CRISP-ML}
+
+La fase de preparación de datos queda delimitada por la conversión de las
+mediciones de movilidad en tiempos de referencia, la identificación de
+entradas disponibles durante la operación y los criterios de construcción,
+escalamiento y selección o extracción de características. La separación
+entre entradas y objetivos, junto con el ajuste del procesamiento únicamente
+sobre entrenamiento, busca reducir el riesgo de fuga de información y de
+una evaluación excesivamente favorable.
+
+Para concluir esta fase será necesario ejecutar el procesamiento y documentar
+la calidad de los datos, las distribuciones antes y después de las
+transformaciones, las características conservadas y la reducción obtenida.
+El diseño aquí presentado no permite afirmar todavía mejoras de rendimiento
+ni de convergencia. En CRISP-ML, el paso al modelado deberá apoyarse en un
+conjunto preparado de forma reproducible y en evidencia de que las decisiones
+adoptadas son compatibles con la información disponible durante la operación.
+
+% Bibliografía integrada: mismos trabajos citados y datos bibliográficos.
+\begin{thebibliography}{99}
+\bibitem[Berth \& Trigos(2025)]{berth_trigos_2025}
+Berth, M. O., \& Trigos, F. (2025).
+A Transdisciplinary Framework for Handling Disruptions in Vehicle Routing with Customer Time Windows. En F. Trigos et al. (Eds.),
+\textit{Transdisciplinarity for a Better World} (pp. 201--210).
+\url{https://doi.org/10.3233/ATDE251092}
+
+\bibitem[Berth(2025)]{berth_thesis_2025}
+Berth, M. O. (2025).
+\textit{Transdisciplinary Approach to Disruptions in Vehicle Routing Problems} [Tesis de maestría]. Reutlingen University.
+Written at Instituto Tecnológico y de Estudios Superiores de Monterrey.
+
+\bibitem[California Department of Transportation(s.f.)]{caltrans_pems}
+California Department of Transportation (s.f.).
+\textit{Performance Measurement System ({PeMS}) Data Source}. Consultado el 9 de octubre de 2026.
+\url{https://dot.ca.gov/programs/traffic-operations/mpr/pems-source}
+
+\bibitem[Cebecauer et al.(2018)]{cebecauer2018integrated}
+Cebecauer, M., Jenelius, E., \& Burghout, W. (2018).
+Integrated Framework for Real-Time Urban Network Travel Time Prediction on Sparse Probe Data.
+\textit{IET Intelligent Transport Systems, 12}(1), 66--74.
+\url{https://doi.org/10.1049/iet-its.2017.0113}
+
+\bibitem[Du et al.(2025)]{du2025survey}
+Du, K., Guo, X., Li, L., Song, J., Shi, Q., Hu, M., \& Fang, J. (2025).
+Traffic Prediction in Time Series, Spatialtemporal, and {OD} Data: A Systematic Survey.
+\textit{Journal of Traffic and Transportation Engineering (English Edition), 12}(3), 666--700.
+\url{https://doi.org/10.1016/j.jtte.2025.03.001}
+
+\bibitem[Gentile et al.(2020)]{gentile2020fast}
+Gentile, G., Meschini, L., Tiddi, D., Fiorani, A., \& Attanasi, A. (2020).
+Fast Estimation of Point-to-Point Travel Times for Real-Time Vehicle Routing.
+\textit{Transportation Research Procedia, 47}, 401--408.
+\url{https://doi.org/10.1016/j.trpro.2020.03.115}
+
+\bibitem[Hofleitner et al.(2012)]{hofleitner2012learning}
+Hofleitner, A., Herring, R., Abbeel, P., \& Bayen, A. M. (2012).
+Learning the Dynamics of Arterial Traffic From Probe Data Using a Dynamic Bayesian Network.
+\textit{IEEE Transactions on Intelligent Transportation Systems, 13}(4), 1679--1693.
+\url{https://doi.org/10.1109/TITS.2012.2200474}
+
+\bibitem[Jenelius \& Koutsopoulos(2018)]{jenelius2018urban}
+Jenelius, E., \& Koutsopoulos, H. N. (2018).
+Urban Network Travel Time Prediction Based on a Probabilistic Principal Component Analysis Model of Probe Data.
+\textit{IEEE Transactions on Intelligent Transportation Systems, 19}(2), 436--445.
+\url{https://doi.org/10.1109/TITS.2017.2703652}
+
+\bibitem[Lei et al.(2024)]{lei2024conditional}
+Lei, D., Xu, M., \& Wang, S. (2024).
+A Conditional Diffusion Model for Probabilistic Estimation of Traffic States at Sensor-Free Locations.
+\textit{Transportation Research Part C: Emerging Technologies, 166}, 104798.
+\url{https://doi.org/10.1016/j.trc.2024.104798}
+
+\bibitem[Li et al.(2018)]{li2018dcrnn}
+Li, Y., Yu, R., Shahabi, C., \& Liu, Y. (2018).
+\textit{Diffusion Convolutional Recurrent Neural Network: Data-Driven Traffic Forecasting}. International Conference on Learning Representations.
+
+\bibitem[Shah \& Piantanakulchai(2026)]{shah2026active}
+Shah, S. M. T., \& Piantanakulchai, M. (2026).
+Ensemble Machine Learning for Travel Time Prediction: An Active Learning-Assisted Approach.
+\textit{Results in Engineering, 29}, 108712.
+\url{https://doi.org/10.1016/j.rineng.2025.108712}
+
+\bibitem[Wang et al.(2025)]{wang2025od}
+Wang, R., Guo, Q., Dai, S., Deng, L., Xiao, Y., \& Jia, C. (2025).
+An {OD} Time Prediction Model Based on Adaptive Graph Embedding.
+\textit{Physica A: Statistical Mechanics and its Applications, 657}, 130217.
+\url{https://doi.org/10.1016/j.physa.2024.130217}
+
+\bibitem[Zhan et al.(2016)]{zhan2016bayesian}
+Zhan, X., Ukkusuri, S. V., \& Yang, C. (2016).
+A Bayesian Mixture Model for Short-Term Average Link Travel Time Estimation Using Large-Scale Limited Information Trip-Based Data.
+\textit{Automation in Construction, 72}, 237--246.
+\url{https://doi.org/10.1016/j.autcon.2015.12.007}
+
+\bibitem[Zhou et al.(2025)]{zhou2025mogernn}
+Zhou, Q., Zhang, Y., Makridis, M. A., Kouvelas, A., Wang, Y., \& Hu, S. (2025).
+{MoGERNN}: An Inductive Traffic Predictor for Unobserved Locations.
+\textit{Transportation Research Part C: Emerging Technologies, 174}, 105080.
+\url{https://doi.org/10.1016/j.trc.2025.105080}
+\end{thebibliography}
+\end{document}
