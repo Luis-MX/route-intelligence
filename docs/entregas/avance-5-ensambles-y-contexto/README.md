@@ -1,3 +1,4 @@
+
 # Avance 5 — Ensambles y fuentes contextuales para la estimación de tiempos de viaje
 
 **Proyecto Integrador · Route Intelligence · Equipo 42**  
@@ -18,9 +19,11 @@ Las tres libretas **son contribuciones separadas**. Sus resultados aún no const
 
 | Libreta | Pregunta abordada | Aportación principal |
 |---|---|---|
-| [`Avance5_Ensambles_Heterogeneos_Equipo42_documentado.ipynb`](Avance5_Ensambles_Heterogeneos_Equipo42_documentado.ipynb) | ¿Es conveniente combinar modelos de distintas familias? | Evalúa *blending* de Ridge, KNN y MLP, y una primera variante de *stacking*; analiza los errores OD y el riesgo de subestimación. |
-| [`Avance5_ensambles_homogeneos.ipynb`](Avance5_ensambles_homogeneos.ipynb) | ¿Ayuda combinar modelos de una misma familia? | Compara bagging de árboles, Random Forest, Extra Trees y bagging de Ridge con referencias individuales; examina la estabilidad de las diferencias. |
-| [`LCS_D04_2017_Equipo42_Avance5-2 (1).ipynb`](LCS_D04_2017_Equipo42_Avance5-2%20%281%29.ipynb) | ¿Qué información sobre cierres programados puede asociarse con la red? | Analiza solicitudes del *Lane Closure System* (LCS) de Caltrans de enero a junio de 2017 y las relaciona con aristas de corredor mediante carreteras, sentidos y postmillas. |
+| [`Avance5_Equipo42_Ensambles_Heterogeneos.ipynb`](Avance5_Equipo42_Ensambles_Heterogeneos.ipynb) | ¿Es conveniente combinar modelos de distintas familias? | Evalúa *blending* de Ridge, KNN y MLP, y una primera variante de *stacking*; analiza los errores OD y el riesgo de subestimación. |
+| [`Avance5_Equipo42_Ensambles_Homogeneos.ipynb`](Avance5_Equipo42_Ensambles_Homogeneos.ipynb) | ¿Ayuda combinar modelos de una misma familia? | Compara bagging de árboles, Random Forest, Extra Trees y bagging de Ridge con referencias individuales; examina la estabilidad de las diferencias. |
+| [`Avance5_Equipo42_Contexto_LCS.ipynb`](Avance5_Equipo42_Contexto_LCS.ipynb) | ¿Qué información sobre cierres programados puede asociarse con la red? | Analiza solicitudes del *Lane Closure System* (LCS) de Caltrans de enero a junio de 2017 y las relaciona con aristas de corredor mediante carreteras, sentidos y postmillas. |
+
+Los nombres de las libretas siguen el formato `Avance5_Equipo42_Tema.ipynb` para facilitar su identificación en el repositorio. El cambio de nombre no modifica su código ni sus resultados.
 
 ## Enfoque experimental y resultados principales
 
