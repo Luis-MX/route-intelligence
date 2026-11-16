@@ -1,0 +1,183 @@
+\documentclass[letterpaper,11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[spanish,es-tabla]{babel}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{setspace}
+\setstretch{1.15}
+\usepackage{graphicx,booktabs,tabularx,array,xcolor,amsmath}
+\usepackage[font=small,labelfont=bf]{caption}
+\usepackage[hidelinks]{hyperref}
+\usepackage{fancyhdr}
+\geometry{headheight=52pt,headsep=0.3cm}
+\renewcommand{\headrulewidth}{0pt}
+\fancypagestyle{primera}{\fancyhf{}\fancyhead[L]{\includegraphics[height=1.2cm]{logo.jpeg}}\fancyhead[R]{\small\sffamily\textcolor{blue!55!black}{Route Intelligence\\Equipo 42}}\fancyfoot[C]{\thepage}}
+\pagestyle{fancy}\fancyhf{}\fancyfoot[C]{\thepage}
+\setlength{\parindent}{1.5em}
+\setlength{\parskip}{4pt}
+\setlength{\emergencystretch}{1.5em}
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+\newcommand{\cifra}[3]{\begingroup\setlength{\fboxsep}{6pt}\colorbox{blue!7}{\parbox[t]{\dimexpr\linewidth-2\fboxsep\relax}{\setstretch{1}\textcolor{blue!55!black}{\Large\bfseries #1}\par\small #2\par\footnotesize #3}}\endgroup}
+\newcommand{\encabezado}[1]{\par\medskip\noindent{\large\bfseries #1}\par\smallskip}
+\begin{document}
+\thispagestyle{primera}
+\noindent{\LARGE\bfseries Estimación y pronóstico de tiempos de viaje en redes dirigidas\par}
+\smallskip
+\noindent{\large\textcolor{black!60}{Resumen ejecutivo | Matrices para planear y recuperar rutas}\par}
+\medskip
+\noindent\begingroup\setlength{\fboxsep}{7pt}\colorbox{black!7}{\parbox{\dimexpr\linewidth-2\fboxsep\relax}{\small\setstretch{1.1}
+\textcolor{black!60}{Integrantes:} Luis Ángel Herrera Flores; Francisco Natanael Ortiz Martínez; Edgar Iván Rosas Gómez.\\
+\textcolor{black!60}{Programa:} Proyecto Integrador \textbar{} Maestría en Inteligencia Artificial Aplicada.\\
+\textcolor{black!60}{Asesor:} Dr. Gerardo Jesús Camacho González.\\
+\textcolor{black!60}{Equipo:} 42, Route Intelligence \hfill \textcolor{black!60}{Fecha:} 16 de noviembre de 2026.
+}}\endgroup\par\medskip
+
+La dirección responsable de una operación de distribución necesita tiempos de traslado confiables para planear visitas y ajustar recorridos cuando cambian las condiciones. Una matriz desactualizada puede comprometer los horarios de atención; sin embargo, estimar mejor los viajes solo crea valor si también mejora las decisiones de ruteo. Route Intelligence propone una capa de información temporal para apoyar la planeación y recuperación de rutas, en el contexto estudiado por Berth y Trigos (2025).
+
+La solución combina dos capacidades: \textbf{M1 anticipa la jornada siguiente} con información disponible hasta las 18:00 del día anterior; \textbf{K=32 actualiza las estimaciones del instante} mediante información histórica y 32 tiempos de viaje entre puntos de la red. Ambos generan matrices origen--destino (OD): tablas con los minutos estimados de traslado entre ubicaciones, respetando los sentidos de circulación. El prototipo utiliza una red experimental derivada de PEMS-BAY (Li et al., 2018) y datos históricos de 2017, no una operación comercial conectada en tiempo real.
+
+\medskip\noindent
+\begin{minipage}[t]{.235\linewidth}\cifra{32.67 s}{Error medio de M1}{Pronóstico OD}\end{minipage}\hfill
+\begin{minipage}[t]{.235\linewidth}\cifra{14.36\%}{Reducción del error}{M1 frente a histórico}\end{minipage}\hfill
+\begin{minipage}[t]{.235\linewidth}\cifra{11.42 s}{Error medio de K=32}{Evaluación principal}\end{minipage}\hfill
+\begin{minipage}[t]{.235\linewidth}\cifra{64.04\%}{Reducción del error}{K=32 frente a histórico}\end{minipage}\par\medskip
+
+Estas cuatro cifras proceden del artículo: M1 se evaluó en junio sobre 13 puntos funcionales de intercambio y ocho cortes horarios diarios; K=32, sobre cinco grupos de 20 sensores y 120 instantes, con pares distintos de los consultados. El error medio es la diferencia absoluta promedio respecto de los tiempos experimentales de referencia. \textbf{Los componentes atienden decisiones distintas y sus errores no son una competencia directa.}
+
+El promedio tampoco garantiza puntualidad: en M1, el 95\% de los errores absolutos quedó por debajo de \textbf{147.67 segundos}, con errores mayores en el resto. Las consultas K=32 fueron simuladas y sin ruido. Los resultados respaldan la conveniencia de explorar un piloto controlado, sujeto a validar las estimaciones con datos externos y evaluar su efecto sobre las decisiones de ruteo. Todavía no acreditan preparación para producción ni ahorros en rutas, combustible o incumplimientos.
+
+\newpage
+\encabezado{Valor esperado e inversión por etapas}
+
+El beneficio cuantificable inicial se plantea en la preparación y revisión de matrices. Como el artículo no identifica una empresa operadora ni proporciona su línea base económica, se propone un \textbf{escenario presupuestario ilustrativo}, pendiente de validación por una entidad interesada. Se supone que seis planificadores realizan esta tarea durante 22 días al mes y que la automatización reduce su dedicación diaria de 90 a 60 minutos, con un costo laboral integral supuesto de 250 MXN por hora.
+
+\medskip\noindent
+\begin{minipage}[t]{.485\linewidth}\cifra{66 horas/mes}{Capacidad de trabajo liberada}{6 personas $\times$ 22 días $\times$ 0.5 horas}\end{minipage}\hfill
+\begin{minipage}[t]{.485\linewidth}\cifra{16,500 MXN/mes}{Valor equivalente del tiempo}{66 horas $\times$ 250 MXN/hora}\end{minipage}\par\smallskip
+\noindent{\footnotesize Base, sensibilidad y fórmulas en el Anexo A. Ambos indicadores representan el mismo beneficio; no se suman.}
+
+Se trata de capacidad para reasignar a excepciones y seguimiento, \textbf{no de una reducción automática de nómina ni de efectivo}. El piloto deberá medir el proceso completo, incluidas las correcciones. No se monetizan mejoras del transporte, ventas o multas porque todavía no se ha ejecutado el optimizador con estas matrices.
+
+Los beneficios intangibles esperados son una \textbf{mejor toma de decisiones}, al distinguir entre pronóstico y actualización contemporánea; \textbf{mayor trazabilidad}, mediante catálogos, fechas y unidades explícitas; y \textbf{simplificación del trabajo}, al consultar nodos y horarios sin repetir el entrenamiento. Su adopción requiere revisar excepciones.
+
+\begin{table}[h!]
+\centering\caption{Presupuesto ilustrativo de propiedad durante los primeros 12 meses.}
+\begin{tabularx}{\linewidth}{@{}Yr@{}}\toprule
+Concepto & MXN\\\midrule
+Desarrollo y adecuación & 90,000\\
+Implementación y capacitación & 30,000\\
+Operación: 6,500 MXN/mes durante 12 meses & 78,000\\
+Reserva de contingencia: 10\% del subtotal & 19,800\\\midrule
+\textbf{TCO a 12 meses} & \textbf{217,800}\\\bottomrule
+\end{tabularx}
+\caption*{Nota. Estimación del equipo para decidir un piloto; no son cotizaciones. Desglose por servicio en el Anexo B. Importes antes de IVA.}
+\end{table}
+
+El valor equivalente de 12 meses de beneficios sería 198,000 MXN, \textbf{19,800 MXN inferior al TCO}, incluso suponiendo disponibilidad desde el primer mes. Si el beneficio comienza después de tres meses de preparación, la diferencia desfavorable aumenta a 69,300 MXN. La inversión completa aún no se justifica por retorno económico.
+
+Se propone un \textbf{piloto de hasta 36,000 MXN}, incluido en desarrollo, con una duración de seis semanas. Antes de ampliar el gasto, deberán validarse volumen de uso, costos de datos y tiempo ahorrado, además de acordarse umbrales de error, latencia y factibilidad. Para cubrir el TCO con nueve meses de beneficio se requieren al menos \textbf{24,200 MXN/mes de valor equivalente}, sin que esto implique recuperación de efectivo. Los supuestos se actualizarán con cotizaciones y resultados.
+
+\newpage
+\encabezado{Condiciones para avanzar y continuidad}
+
+Se proponen cuatro medidas prioritarias para el piloto:
+
+\begin{table}[h!]
+\centering\caption{Riesgos de implementación y medidas de mitigación.}
+\begin{tabularx}{\linewidth}{@{}p{.29\linewidth}Y@{}}\toprule
+Riesgo & Medida y condición de avance\\\midrule
+Datos históricos y red aproximada & Validar movimientos viales y ubicaciones del piloto; contrastar tiempos con viajes observados y reservar un periodo nuevo de evaluación.\\[5pt]
+Subestimación y circulación atípica & Medir errores por condición y efecto en ventanas de servicio; acordar límites de aceptación y usar una referencia histórica o revisión humana ante resultados fuera de rango.\\[5pt]
+Consultas externas distintas de las simuladas & Probar ruido, faltantes, licencia, costo y latencia de la fuente real para K=32; definir caducidad y respaldo cuando no haya información suficiente.\\[5pt]
+Integración y uso operativo incorrectos & Acordar identificadores, minutos y horarios; comparar rutas con la misma demanda y restricciones. Exigir factibilidad y registrar retrasos, costo y tiempo total de respuesta antes de automatizar decisiones.\\\bottomrule
+\end{tabularx}
+\caption*{Nota. Riesgos derivados de las limitaciones del artículo; medidas propuestas por el equipo.}
+\end{table}
+
+Se transferirán cuadernos y código versionados, modelos y referencias históricas, catálogos, biblioteca temporal, matrices de ejemplo, metadatos y verificaciones. El paquete permite consultar nodos y horarios; su ampliación temporal no constituye una nueva evaluación de precisión.
+
+La \textbf{guía operativa} propuesta cubrirá instalación y dependencias, validación de entradas, formulario, interpretación de salidas y unidades, errores, respaldos y criterios de actualización o reentrenamiento. La organización interesada deberá designar responsables de las áreas operativa y técnica. El cierre requerirá una ejecución reproducible por un usuario designado y una decisión documentada de continuar, ajustar o detener la inversión.
+
+\noindent\textbf{Declaración de uso de inteligencia artificial.} Se utilizó Codex de OpenAI, basado en GPT-6, como apoyo editorial, en la formulación del escenario económico y en la verificación del formato LaTeX/PDF.
+
+\encabezado{Referencias}
+\begingroup\setlength{\parindent}{0pt}\setlength{\parskip}{5pt}
+\newcommand{\referencia}[1]{\hangindent=1.27cm\hangafter=1 #1\par}
+\referencia{Berth, M. O., \& Trigos, F. (2025). A transdisciplinary framework for handling disruptions in vehicle routing with customer time windows. En \textit{Transdisciplinarity for a better world} (pp. 201--210). \url{https://doi.org/10.3233/ATDE251092}}
+\referencia{Li, Y., Yu, R., Shahabi, C., \& Liu, Y. (2018). Diffusion convolutional recurrent neural network: Data-driven traffic forecasting. \textit{International Conference on Learning Representations}. \url{https://openreview.net/forum?id=SJiHXGWAZ}}
+\endgroup
+
+\clearpage
+\encabezado{Anexo A. Beneficios mensuales y bases de cálculo}
+
+\textbf{Naturaleza del escenario.} Los materiales aportados no contienen volúmenes, salarios, mediciones de productividad ni cotizaciones para su implementación. Todos los parámetros económicos de estos anexos son supuestos de planeación del equipo, no resultados del experimento. Se estima únicamente el tiempo de preparación de matrices; no se supone un ahorro logístico.
+
+\begin{table}[h!]
+\centering\caption{Supuestos del beneficio mensual de productividad.}
+\begin{tabularx}{\linewidth}{@{}p{.32\linewidth}p{.20\linewidth}Y@{}}\toprule
+Parámetro & Valor supuesto & Base y validación requerida\\\midrule
+Usuarios del proceso & 6 planificadores & Equipo ilustrativo; confirmar número y uso efectivo.\\[4pt]
+Jornadas & 22 días/mes & Calendario laboral supuesto; sustituir por registros.\\[4pt]
+Tiempo antes / después & 1.5 / 1 h por persona y día & Incluye preparar y revisar matrices. Cronometrar ambos flujos en tareas equivalentes.\\[4pt]
+Costo laboral integral & 250 MXN/h & Valor interno supuesto, equivalente a 44,000 MXN por 176 h; validar con Finanzas.\\[4pt]
+Beneficio monetizado & Solo tiempo liberado & No incluye combustible, ventas, penalizaciones ni reducción de personal.\\\bottomrule
+\end{tabularx}
+\end{table}
+
+\noindent\textbf{Cálculos del escenario base:}
+\begin{align*}
+H_{\mathrm{antes}} &= 6\times22\times1.5 = 198\ \text{h/mes},\\
+H_{\mathrm{despu\acute{e}s}} &= 6\times22\times1 = 132\ \text{h/mes},\\
+H_{\mathrm{liberadas}} &= 198-132 = 66\ \text{h/mes},\\
+B_{\mathrm{mensual}} &= 66\times250 = 16{,}500\ \text{MXN/mes}.
+\end{align*}
+
+\begin{table}[h!]
+\centering\caption{Sensibilidad al tiempo efectivamente liberado.}
+\begin{tabularx}{\linewidth}{@{}Yrrr@{}}\toprule
+Escenario & Min/persona/día & Horas/mes & MXN/mes\\\midrule
+Conservador & 15 & 33 & 8,250\\
+Base & 30 & 66 & 16,500\\
+Favorable & 45 & 99 & 24,750\\\bottomrule
+\end{tabularx}
+\caption*{Nota. Valor equivalente calculado con 6 personas, 22 días/mes y 250 MXN/h. No son ahorros observados ni de efectivo.}
+\end{table}
+
+\textbf{Contraste con el TCO.} Sin descontar flujos, 12 meses de beneficio base equivalen a $12\times16{,}500=198{,}000$ MXN; al restar 217,800 MXN, el balance de valor es $-19{,}800$ MXN. Con tres meses iniciales sin beneficios, $9\times16{,}500-217{,}800=-69{,}300$ MXN. Para igualar el TCO en esos nueve meses se requieren $217{,}800/9=24{,}200$ MXN/mes: 96.8 h/mes o 44 minutos por persona y día. No equivale a retorno de efectivo.
+
+\clearpage
+\encabezado{Anexo B. TCO a 12 meses y alcance del piloto}
+
+\begin{table}[h!]
+\centering\caption{Desglose presupuestario por servicio, antes de IVA.}
+\begin{tabularx}{\linewidth}{@{}Yp{.30\linewidth}r@{}}\toprule
+Servicio & Base de cálculo supuesta & MXN\\\midrule
+\multicolumn{3}{@{}l}{\textbf{Desarrollo y adecuación}}\\[3pt]
+Análisis y protocolo de validación & 48 h $\times$ 500 MXN/h & 24,000\\
+Adaptación de código e integración & 132 h $\times$ 500 MXN/h & 66,000\\
+\multicolumn{2}{@{}l}{Subtotal desarrollo} & 90,000\\\midrule
+\multicolumn{3}{@{}l}{\textbf{Implementación}}\\[3pt]
+Configuración y validación de datos & 40 h $\times$ 500 MXN/h & 20,000\\
+Capacitación y transferencia & 40 h $\times$ 250 MXN/h & 10,000\\
+\multicolumn{2}{@{}l}{Subtotal implementación} & 30,000\\\midrule
+\multicolumn{3}{@{}l}{\textbf{Operación durante 12 meses}}\\[3pt]
+Cómputo & 1,500 MXN/mes $\times$ 12 & 18,000\\
+Almacenamiento y respaldos & 500 MXN/mes $\times$ 12 & 6,000\\
+Provisión para datos o consultas OD & 1,500 MXN/mes $\times$ 12 & 18,000\\
+Soporte y monitoreo & 12 h/mes $\times$ 250 MXN/h $\times$ 12 & 36,000\\
+\multicolumn{2}{@{}l}{Subtotal operación} & 78,000\\\midrule
+Subtotal antes de contingencia & 90,000 + 30,000 + 78,000 & 198,000\\
+Reserva de contingencia & 10\% $\times$ 198,000 & 19,800\\\midrule
+\multicolumn{2}{@{}l}{\textbf{TCO primeros 12 meses}} & \textbf{217,800}\\\bottomrule
+\end{tabularx}
+\caption*{Nota. Tarifas y consumos son supuestos internos; la provisión de datos no representa el precio de un proveedor. La operación se presupuesta los 12 meses, incluso durante la preparación.}
+\end{table}
+
+El presupuesto supone reutilizar los artefactos académicos y disponer de un optimizador accesible para pruebas. No incluye construir un optimizador desde cero, hardware vehicular ni un despliegue empresarial multisitio. Si alguno resulta necesario, deberá ampliarse el alcance y recalcularse el TCO antes de contratar. Los beneficios y costos se comparan antes de IVA, sin inflación, financiamiento ni descuento; no se presenta una valoración financiera definitiva.
+
+\textbf{Primera autorización propuesta: 36,000 MXN.} Comprende las 48 h de análisis (24,000 MXN) y las primeras 24 h de adaptación técnica (12,000 MXN). Son parte de los 90,000 MXN de desarrollo, no un cargo adicional. El plazo propuesto es de seis semanas, condicionado al acceso a datos, personal y optimizador.
+
+\textbf{Evidencia para liberar el resto.} Entregar una línea base de tiempos de trabajo, comparación de rutas con iguales restricciones, validación con un periodo independiente, registro de fallos y tiempos de respuesta, y cotización de la fuente externa. La organización interesada deberá acordar los umbrales antes de medir. Si el valor mensual esperado no cubre el umbral de 24,200 MXN bajo el arranque de tres meses, deberá reducirse el TCO o justificarse por separado otro beneficio medido. No se recomienda escalar por la sola mejora del error predictivo.
+
+\end{document}
